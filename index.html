@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>ESO Closer · Group Meeting</title>
+  <meta name="description" content="Join the ESO Closer group meeting for e-commerce sellers — live strategy, Q&A and a clear growth plan. Book your seat today." />
+  <link rel="icon" href="assets/eso-closer.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ================= NAVBAR ================= -->
+  <header class="nav" id="top">
+    <div class="container nav__inner">
+      <a href="#home" class="nav__brand" aria-label="ESO Closer home">
+        <img src="assets/eso-closer.png" alt="ESO Closer" />
+      </a>
+
+      <nav class="nav__links" id="navLinks" aria-label="Main">
+        <a href="#home" class="is-active">Home</a>
+        <a href="#about">About</a>
+        <a href="#services">Services</a>
+        <a href="#book" class="btn btn--primary nav__cta">Book Now</a>
+      </nav>
+
+      <button class="nav__toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="navLinks">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <!-- ================= HERO + FORM ================= -->
+    <section class="hero" id="home">
+      <div class="hero__glow" aria-hidden="true"></div>
+      <div class="container hero__grid">
+        <div class="hero__copy">
+          <p class="eyebrow eyebrow--light">Live group meeting · For e-commerce sellers</p>
+          <h1>Close the gap between <span class="accent">interested</span> and <span class="accent">paid.</span></h1>
+          <p class="hero__lead">
+            One focused group session with the ESO team. Whether you're about to launch your first store or
+            already selling on Amazon, Flipkart, Meesho or Myntra — walk out with a clear, practical plan to grow.
+          </p>
+
+          <ul class="hero__points">
+            <li><span class="tick" aria-hidden="true"></span>Live strategy walkthrough with experts</li>
+            <li><span class="tick" aria-hidden="true"></span>Open Q&amp;A for your own store</li>
+            <li><span class="tick" aria-hidden="true"></span>Join link sent on WhatsApp &amp; email</li>
+          </ul>
+
+          <div class="hero__stats">
+            <div><strong>Live</strong><span>Group session</span></div>
+            <div><strong>4</strong><span>Marketplaces</span></div>
+            <div><strong>3</strong><span>Languages</span></div>
+          </div>
+        </div>
+
+        <!-- Booking form -->
+        <div class="form-card" id="book">
+          <div class="form-card__head">
+            <p class="eyebrow">Reserve your seat</p>
+            <h2>Book the group meeting</h2>
+            <p class="form-card__price">
+              <span class="mono">Registration fee</span>
+              <strong id="feeLabel">₹ —</strong>
+            </p>
+          </div>
+
+          <form id="bookingForm" novalidate>
+            <div class="field">
+              <label for="name">Name</label>
+              <input id="name" name="name" type="text" autocomplete="name" placeholder="Your full name" required />
+              <p class="field__error" data-for="name"></p>
+            </div>
+
+            <div class="field">
+              <label for="phone">Phone number</label>
+              <div class="phone">
+                <span class="phone__code">+91</span>
+                <input id="phone" name="phone" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="10" placeholder="98765 43210" required />
+              </div>
+              <p class="field__error" data-for="phone"></p>
+            </div>
+
+            <div class="field">
+              <label for="email">Mail ID</label>
+              <input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required />
+              <p class="field__error" data-for="email"></p>
+            </div>
+
+            <div class="field">
+              <label for="sellerType">Seller type</label>
+              <div class="select">
+                <select id="sellerType" name="sellerType" required>
+                  <option value="" selected disabled>Select seller type</option>
+                  <option value="existing">Existing seller</option>
+                  <option value="new">New seller</option>
+                </select>
+              </div>
+              <p class="field__error" data-for="sellerType"></p>
+            </div>
+
+            <button type="submit" class="btn btn--primary btn--block btn--lg" id="payBtn">
+              Pay Now <span class="pay-amount">₹ —</span>
+            </button>
+            <p class="form-alert" id="formAlert" role="alert" hidden></p>
+            <p class="form-card__note">🔒 Secure payment by Razorpay · UPI, cards &amp; net banking</p>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= ABOUT ================= -->
+    <section class="section" id="about">
+      <div class="container about">
+        <div class="about__visual" aria-hidden="true">
+          <div class="mock-card">
+            <p class="mono mock-card__eyebrow">Group meeting · Tamil · Wed 7 PM</p>
+            <p class="mock-card__title">60-Day Growth Sprint</p>
+            <p class="mock-card__amount">₹2,95,000</p>
+            <div class="mock-card__timer mono">23 : 51 : 04</div>
+            <p class="mono mock-card__foot">Offer expires</p>
+          </div>
+          <div class="about__badge">
+            <strong>1 session</strong>
+            <span>to a clear growth plan</span>
+          </div>
+        </div>
+
+        <div class="about__copy">
+          <p class="eyebrow">About ESO Closer</p>
+          <h2>Built for sellers who want results, not just advice.</h2>
+          <p>
+            ESO Closer is the sales-closing toolkit behind ESO's seller growth programmes. Our group meetings bring
+            sellers together with the team that runs real marketplace accounts every day — so the guidance you get
+            is tested, current and practical.
+          </p>
+          <p>
+            New to selling? We'll show you how to launch the right way. Already selling? We'll find where your
+            store is leaking sales and how to fix it — in one session, with your questions answered live.
+          </p>
+
+          <div class="about__grid">
+            <div>
+              <span class="about__icon">🎯</span>
+              <h3>Focused</h3>
+              <p>One topic, one plan, zero fluff.</p>
+            </div>
+            <div>
+              <span class="about__icon">🗣️</span>
+              <h3>Your language</h3>
+              <p>Sessions in English, Tamil &amp; Hindi.</p>
+            </div>
+            <div>
+              <span class="about__icon">🤝</span>
+              <h3>Ongoing support</h3>
+              <p>Community &amp; follow-ups after the call.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SERVICES ================= -->
+    <section class="section section--tint" id="services">
+      <div class="container">
+        <div class="section__head">
+          <p class="eyebrow">Services</p>
+          <h2>Everything a seller needs to grow</h2>
+          <p>The group meeting is your starting point. Here's what the ESO team can help you with after it.</p>
+        </div>
+
+        <div class="services">
+          <article class="service">
+            <div class="service__num mono">01</div>
+            <h3>Group Strategy Meetings</h3>
+            <p>Live weekly sessions on listings, pricing, ads and growth — with open Q&amp;A for your store.</p>
+          </article>
+          <article class="service">
+            <div class="service__num mono">02</div>
+            <h3>New Seller Onboarding</h3>
+            <p>GST, account setup, catalogue and first listings — launch on the right marketplace the right way.</p>
+          </article>
+          <article class="service">
+            <div class="service__num mono">03</div>
+            <h3>Account Growth Audit</h3>
+            <p>For existing sellers: we find where you're losing sales and give you a step-by-step fix list.</p>
+          </article>
+          <article class="service">
+            <div class="service__num mono">04</div>
+            <h3>Ads &amp; Listing Optimisation</h3>
+            <p>Sharper titles, images and keywords, plus ad campaigns that spend less and sell more.</p>
+          </article>
+          <article class="service">
+            <div class="service__num mono">05</div>
+            <h3>Account Management</h3>
+            <p>Hand over day-to-day operations to a dedicated team while you focus on your products.</p>
+          </article>
+          <article class="service">
+            <div class="service__num mono">06</div>
+            <h3>1:1 Consultations</h3>
+            <p>Book a private call with an ESO expert for a deep dive into your business.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= HOW IT WORKS ================= -->
+    <section class="section">
+      <div class="container">
+        <div class="section__head">
+          <p class="eyebrow">How it works</p>
+          <h2>Three steps to your seat</h2>
+        </div>
+        <ol class="steps">
+          <li>
+            <span class="steps__n">1</span>
+            <h3>Fill the form</h3>
+            <p>Your name, phone number, mail ID and whether you're a new or existing seller.</p>
+          </li>
+          <li>
+            <span class="steps__n">2</span>
+            <h3>Pay securely</h3>
+            <p>Complete the registration fee online — UPI, cards and net banking accepted.</p>
+          </li>
+          <li>
+            <span class="steps__n">3</span>
+            <h3>Join the meeting</h3>
+            <p>Get your join link and reminders on WhatsApp and email. Just show up and learn.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ================= CTA BAND ================= -->
+    <section class="cta">
+      <div class="container cta__inner">
+        <div>
+          <h2>Seats are limited for every session.</h2>
+          <p>Book now and get the join link straight to your WhatsApp.</p>
+        </div>
+        <a href="#book" class="btn btn--primary btn--lg">Book Now</a>
+      </div>
+    </section>
+  </main>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="footer">
+    <div class="container footer__grid">
+      <div class="footer__brand">
+        <img src="assets/eso-closer.png" alt="ESO Closer" />
+        <p>Sales closing toolkit. Helping e-commerce sellers close the gap between interested and paid.</p>
+      </div>
+
+      <div>
+        <h4>Quick links</h4>
+        <ul>
+          <li><a href="#home">Home</a></li>
+          <li><a href="#about">About</a></li>
+          <li><a href="#services">Services</a></li>
+          <li><a href="#book">Book Now</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4>Services</h4>
+        <ul>
+          <li><a href="#services">Group Meetings</a></li>
+          <li><a href="#services">Seller Onboarding</a></li>
+          <li><a href="#services">Growth Audit</a></li>
+          <li><a href="#services">Account Management</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4>Contact</h4>
+        <ul>
+          <li><a href="https://closer.esowolf.in/" target="_blank" rel="noopener">closer.esowolf.in</a></li>
+          <li><a href="#book">Book a seat</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="container footer__bottom">
+      <p>© <span id="year"></span> ESO Closer. All rights reserved.</p>
+      <p><a href="#">Privacy Policy</a> · <a href="#">Terms of Service</a></p>
+    </div>
+  </footer>
+
+  <!-- ================= PAYMENT MODAL ================= -->
+  <div class="modal" id="payModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" hidden>
+    <div class="modal__backdrop" data-close></div>
+    <div class="modal__card">
+      <div class="modal__check" aria-hidden="true">✓</div>
+      <h3 id="modalTitle">Payment successful!</h3>
+      <p class="modal__text" id="modalText">Your seat for the group meeting is booked. We'll send the join link on WhatsApp and email.</p>
+      <dl class="modal__summary" id="modalSummary"></dl>
+      <button class="btn btn--primary btn--block" data-close>Done</button>
+    </div>
+  </div>
+
+  <script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
+  <script src="script.js"></script>
+</body>
+</html>

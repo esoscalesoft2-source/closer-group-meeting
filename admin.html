@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Group Meeting Admin</title>
+  <link rel="icon" href="assets/eso-closer.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    body { background: var(--surface-2); min-height: 100vh; }
+    .admin-nav .nav__links { gap: 18px; }
+    .admin-nav .nav__links a,
+    .admin-nav .nav__links button.linkish { color: var(--on-navy-muted); font-size: 14px; font-weight: 500; }
+    .admin-nav .nav__links a:hover,
+    .admin-nav .nav__links button.linkish:hover { color: #fff; }
+    .admin-nav .tag { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--orange); margin-left: 12px; }
+    .admin-nav .nav__brand { display: flex; align-items: center; }
+    .linkish { background: none; border: 0; padding: 0; cursor: pointer; font: inherit; }
+
+    .admin-main { padding: 40px 0 64px; }
+    .panel { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 26px; }
+    .panel h2 { font-size: 1.3rem; margin-bottom: 4px; }
+    .panel .sub { color: var(--muted); font-size: 14px; margin-bottom: 20px; }
+
+    .login { max-width: 400px; margin: 40px auto; border-top: 4px solid var(--orange); }
+
+    .grid { display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 24px; align-items: start; }
+    .grid > * { min-width: 0; }
+    .stack { display: grid; gap: 14px; min-width: 0; align-content: start; }
+
+    /* Accordion: the four settings cards on the left */
+    .acc { padding: 0; overflow: hidden; transition: box-shadow 0.2s, border-color 0.2s; }
+    .acc.is-open { border-color: rgba(253, 118, 26, 0.45); box-shadow: 0 16px 36px -24px rgba(19, 27, 46, 0.35); }
+    .acc__h { margin: 0; font-size: inherit; letter-spacing: normal; }
+    .acc__head {
+      width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 18px 22px; background: none; border: 0; cursor: pointer; text-align: left; font: inherit; color: inherit;
+    }
+    .acc__head:hover { background: var(--surface-2); }
+    .acc__head:focus-visible { outline: 2px solid var(--orange); outline-offset: -2px; border-radius: 16px; }
+    .acc__titles { display: grid; gap: 2px; min-width: 0; }
+    .acc__titles .eyebrow { margin: 0; }
+    .acc__title { font-family: var(--font-heading); font-weight: 700; font-size: 1.15rem; letter-spacing: -0.02em; color: var(--text); }
+    .acc__right { display: flex; align-items: center; gap: 10px; flex: none; }
+    .acc__chev {
+      width: 28px; height: 28px; border-radius: 8px; background: var(--surface-2); position: relative; flex: none;
+      transition: transform 0.2s, background 0.2s;
+    }
+    .acc__chev::after {
+      content: ''; position: absolute; left: 50%; top: 50%; width: 7px; height: 7px;
+      border: solid var(--muted); border-width: 0 2px 2px 0; transform: translate(-50%, -70%) rotate(45deg);
+    }
+    .acc.is-open .acc__chev { transform: rotate(180deg); background: var(--orange-soft); }
+    .acc__body { padding: 0 22px 24px; animation: accIn 0.2s ease-out; }
+    .acc__body > .sub:first-child { margin-top: 0; }
+    @keyframes accIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+    .chip.chip--fee { background: var(--orange-soft); color: var(--orange-dark); font-size: 12px; }
+    .chip.chip--fee::before, .chip.chip--user::before { display: none; }
+    .chip.chip--user { background: var(--surface-2); color: var(--muted); text-transform: none; letter-spacing: 0; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; }
+    @media (max-width: 400px) { .acc__head { padding: 16px; } .acc__body { padding: 0 16px 20px; } .acc__right .chip { display: none; } }
+    .smtp-row { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 10px; }
+    .hint { font-size: 13px; color: var(--muted-2); margin: 6px 0 0; }
+    .hint a { color: var(--orange-dark); text-decoration: underline; }
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+    .test-box { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--line); }
+    .test-box label { display: block; font-family: var(--font-mono); font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+    .test-box input { flex: 1; min-width: 0; height: 44px; padding: 0 14px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--surface); font: inherit; font-size: 15px; }
+    .test-box input:focus { outline: none; border-color: var(--orange); box-shadow: 0 0 0 4px rgba(253, 118, 26, 0.15); }
+    .pw { position: relative; }
+    .pw input { padding-right: 48px !important; }
+    .pw__eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 8px; background: transparent; color: var(--muted-2); cursor: pointer; }
+    .pw__eye:hover { color: var(--text); background: var(--surface-2); }
+    .pw__eye:focus-visible { outline: 2px solid var(--orange); outline-offset: 1px; }
+    .pw__eye svg { width: 20px; height: 20px; }
+    #credBtn { margin-top: 6px; }
+    .warn-msg { margin: 12px 0 0; padding: 10px 12px; border-radius: 10px; background: #fef3c7; color: #92400e; font-size: 14px; }
+    .fee-row { display: flex; gap: 10px; }
+    .fee-input { position: relative; flex: 1; }
+    .fee-input span { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-family: var(--font-heading); font-weight: 700; color: var(--muted); }
+    .fee-input input { padding-left: 32px !important; font-family: var(--font-heading); font-weight: 700; font-size: 18px !important; }
+    .fee-preview { margin-top: 18px; padding: 14px; border-radius: 12px; background: var(--orange-soft); border: 1px dashed rgba(253, 118, 26, 0.5); display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .fee-preview .mono { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+    .fee-preview strong { font-family: var(--font-heading); font-size: 1.5rem; color: var(--orange-dark); }
+    .meta { font-size: 13px; color: var(--muted-2); margin: 10px 0 0; }
+    .ok-msg { margin: 12px 0 0; padding: 10px 12px; border-radius: 10px; background: #e6f4ea; color: #137333; font-size: 14px; }
+
+    .chip { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; }
+    .chip::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    .chip--test { background: #fef3c7; color: #92400e; }
+    .chip--live { background: #e6f4ea; color: #137333; }
+    .chip--off { background: #ffdad6; color: #93000a; }
+    .status-row { display: flex; justify-content: space-between; align-items: center; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 14px; color: var(--muted); }
+
+    .stats { display: flex; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+    .stat { background: var(--surface-2); border-radius: 12px; padding: 12px 16px; min-width: 140px; }
+    .stat strong { display: block; font-family: var(--font-heading); font-size: 1.4rem; }
+    .stat span { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted-2); }
+    .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th { text-align: left; font-family: var(--font-mono); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted-2); background: var(--surface-2); padding: 10px 14px; white-space: nowrap; }
+    td { padding: 12px 14px; border-top: 1px solid var(--line); white-space: nowrap; }
+    td.mono { font-size: 12px; color: var(--muted); }
+    .empty { text-align: center; color: var(--muted-2); padding: 28px; }
+    .head-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .btn--ghost { background: var(--surface-2); color: var(--text); border: 1px solid var(--line); padding: 8px 14px; font-size: 14px; }
+    .btn--ghost:hover { background: var(--line); }
+    .btn--excel { background: #137333; color: #fff; padding: 8px 14px; font-size: 14px; }
+    .btn--excel:hover { background: #0f5c29; }
+    .btn--excel:disabled { opacity: 0.45; cursor: not-allowed; }
+    .head-row { flex-wrap: wrap; }
+    .filter-bar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; margin-top: 16px; padding: 14px; border-radius: 12px; background: var(--surface-2); }
+    .filter-field { display: grid; gap: 5px; flex: 1 1 140px; min-width: 0; }
+    .filter-field label { font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+    .filter-field input, .filter-field select { width: 100%; height: 40px; padding: 0 12px; border: 1.5px solid var(--line); border-radius: 10px; background: #fff; font: inherit; font-size: 14px; color: var(--text); }
+    .filter-field select { padding-right: 36px; }
+    .filter-field input:focus, .filter-field select:focus { outline: none; border-color: var(--orange); box-shadow: 0 0 0 3px rgba(253, 118, 26, 0.15); }
+    .filter-field .select::after { right: 14px; }
+    .filter-clear { height: 40px; }
+
+    @media (max-width: 960px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+    @media (max-width: 480px) { .panel { padding: 20px; } .fee-row { flex-wrap: wrap; } .fee-row .btn { width: 100%; } }
+    @media (max-width: 768px) {
+      .admin-nav .nav__links { position: static; flex-direction: row; opacity: 1; transform: none; pointer-events: auto; padding: 0; background: none; border: 0; }
+      .admin-nav .tag { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav admin-nav">
+    <div class="container nav__inner">
+      <a href="/" class="nav__brand" aria-label="ESO Closer landing page">
+        <img src="assets/eso-closer.png" alt="ESO Closer" />
+        <span class="tag">Admin</span>
+      </a>
+      <nav class="nav__links">
+        <a href="/" target="_blank" rel="noopener">View page ↗</a>
+        <button class="linkish" id="logoutBtn" hidden>Log out</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="admin-main container">
+    <!-- Login -->
+    <section class="panel login" id="loginView" hidden>
+      <p class="eyebrow">Group meeting admin</p>
+      <h2>Log in</h2>
+      <p class="sub">Set the registration fee shown on the landing page.</p>
+      <form id="loginForm" novalidate>
+        <div class="field">
+          <label for="username">Username</label>
+          <input id="username" name="username" autocomplete="username" required />
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required />
+        </div>
+        <button class="btn btn--primary btn--block" type="submit" id="loginBtn">Log in</button>
+        <p class="form-alert" id="loginAlert" role="alert" hidden></p>
+      </form>
+    </section>
+
+    <!-- Dashboard -->
+    <div class="grid" id="dashView" hidden>
+      <div class="stack">
+      <section class="panel acc" data-acc="fee">
+        <h2 class="acc__h">
+          <button type="button" class="acc__head" id="acc-fee-btn" aria-expanded="false" aria-controls="acc-fee">
+            <span class="acc__titles">
+              <span class="eyebrow">Registration fee</span>
+              <span class="acc__title">Set the amount</span>
+            </span>
+            <span class="acc__right"><span class="chip chip--fee" id="feeSummary">—</span><span class="acc__chev" aria-hidden="true"></span></span>
+          </button>
+        </h2>
+        <div class="acc__body" id="acc-fee" role="region" aria-labelledby="acc-fee-btn" hidden>
+        <p class="sub">This amount shows on the landing page and is what Razorpay charges.</p>
+
+        <form id="feeForm" novalidate>
+          <div class="field">
+            <label for="fee">Amount (₹)</label>
+            <div class="fee-row">
+              <div class="fee-input">
+                <span>₹</span>
+                <input id="fee" name="fee" type="text" inputmode="numeric" maxlength="7" required />
+              </div>
+              <button class="btn btn--primary" type="submit" id="saveBtn">Save</button>
+            </div>
+            <p class="field__error" id="feeError"></p>
+          </div>
+        </form>
+
+        <div class="fee-preview">
+          <span class="mono">Landing page shows</span>
+          <strong id="feePreview">—</strong>
+        </div>
+        <p class="ok-msg" id="saveOk" role="status" hidden></p>
+        <p class="meta" id="updatedAt"></p>
+
+        <div class="status-row">
+          <span>Razorpay</span>
+          <span class="chip" id="rzpChip">—</span>
+        </div>
+        </div>
+      </section>
+
+      <section class="panel acc" data-acc="rzp">
+        <h2 class="acc__h">
+          <button type="button" class="acc__head" id="acc-rzp-btn" aria-expanded="false" aria-controls="acc-rzp">
+            <span class="acc__titles">
+              <span class="eyebrow">Payments</span>
+              <span class="acc__title">Razorpay keys</span>
+            </span>
+            <span class="acc__right"><span class="chip" id="rzpChip2">—</span><span class="acc__chev" aria-hidden="true"></span></span>
+          </button>
+        </h2>
+        <div class="acc__body" id="acc-rzp" role="region" aria-labelledby="acc-rzp-btn" hidden>
+        <p class="sub">Pay Now uses these keys. They're checked with Razorpay before they're saved.</p>
+
+        <form id="rzpForm" novalidate>
+          <div class="field">
+            <label for="rzpKeyId">Key ID</label>
+            <input id="rzpKeyId" name="keyId" placeholder="rzp_test_xxxxxxxxxxxx" autocomplete="off" spellcheck="false" />
+            <p class="field__error" data-for="keyId"></p>
+          </div>
+          <div class="field">
+            <label for="rzpKeySecret">Key Secret</label>
+            <input id="rzpKeySecret" name="keySecret" type="password" autocomplete="new-password" spellcheck="false" placeholder="Key Secret" />
+            <p class="field__error" data-for="keySecret"></p>
+            <p class="hint">Razorpay Dashboard → Account &amp; Settings → API Keys. Use <b>rzp_test_</b> keys to try it out, <b>rzp_live_</b> keys to take real payments. <a href="https://dashboard.razorpay.com/app/website-app-settings/api-keys" target="_blank" rel="noopener">Open API Keys ↗</a></p>
+          </div>
+          <p class="warn-msg" id="rzpLiveNote" hidden>Live keys: Pay Now will take real money.</p>
+          <div class="btn-row">
+            <button class="btn btn--primary" type="submit" id="rzpSaveBtn">Save &amp; check</button>
+            <button class="btn btn--ghost" type="button" id="rzpRemoveBtn" hidden>Remove</button>
+          </div>
+          <p class="form-alert" id="rzpAlert" role="alert" hidden></p>
+          <p class="ok-msg" id="rzpOk" role="status" hidden></p>
+        </form>
+        </div>
+      </section>
+
+      <section class="panel acc" data-acc="smtp">
+        <h2 class="acc__h">
+          <button type="button" class="acc__head" id="acc-smtp-btn" aria-expanded="false" aria-controls="acc-smtp">
+            <span class="acc__titles">
+              <span class="eyebrow">Email settings</span>
+              <span class="acc__title">Email (SMTP)</span>
+            </span>
+            <span class="acc__right"><span class="chip" id="smtpChip">—</span><span class="acc__chev" aria-hidden="true"></span></span>
+          </button>
+        </h2>
+        <div class="acc__body" id="acc-smtp" role="region" aria-labelledby="acc-smtp-btn" hidden>
+        <p class="sub">Used to send the new login when it's changed. Saved settings are checked before they're kept.</p>
+
+        <form id="smtpForm" novalidate>
+          <div class="field">
+            <label for="smtpProvider">Provider</label>
+            <div class="select">
+              <select id="smtpProvider">
+                <option value="gmail">Gmail</option>
+                <option value="outlook">Outlook / Microsoft 365</option>
+                <option value="zoho">Zoho Mail (India)</option>
+                <option value="custom">Other (custom)</option>
+              </select>
+            </div>
+          </div>
+          <div class="smtp-row">
+            <div class="field">
+              <label for="smtpHost">SMTP host</label>
+              <input id="smtpHost" name="host" placeholder="smtp.gmail.com" autocomplete="off" />
+              <p class="field__error" data-for="host"></p>
+            </div>
+            <div class="field">
+              <label for="smtpPort">Port</label>
+              <input id="smtpPort" name="port" inputmode="numeric" maxlength="5" placeholder="587" autocomplete="off" />
+              <p class="field__error" data-for="port"></p>
+            </div>
+          </div>
+          <div class="field">
+            <label for="smtpUser">Email / username</label>
+            <input id="smtpUser" name="user" type="email" placeholder="you@gmail.com" autocomplete="off" />
+            <p class="field__error" data-for="user"></p>
+          </div>
+          <div class="field">
+            <label for="smtpPass" id="smtpPassLabel">App password</label>
+            <input id="smtpPass" name="pass" type="password" autocomplete="new-password" placeholder="16-letter app password" />
+            <p class="field__error" data-for="pass"></p>
+            <p class="hint" id="smtpHint"></p>
+          </div>
+          <div class="field">
+            <label for="smtpFrom">Send from (optional)</label>
+            <input id="smtpFrom" name="from" type="email" placeholder="Same as email / username" autocomplete="off" />
+            <p class="field__error" data-for="from"></p>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn--primary" type="submit" id="smtpSaveBtn">Save &amp; check</button>
+            <button class="btn btn--ghost" type="button" id="smtpRemoveBtn" hidden>Remove</button>
+          </div>
+          <p class="form-alert" id="smtpAlert" role="alert" hidden></p>
+          <p class="ok-msg" id="smtpOk" role="status" hidden></p>
+        </form>
+
+        <div class="test-box" id="smtpTestBox" hidden>
+          <label for="smtpTestTo">Send a test email to</label>
+          <div class="fee-row">
+            <input id="smtpTestTo" type="email" placeholder="you@example.com" />
+            <button class="btn btn--ghost" type="button" id="smtpTestBtn">Send test</button>
+          </div>
+          <p class="form-alert" id="smtpTestAlert" role="alert" hidden></p>
+          <p class="ok-msg" id="smtpTestOk" role="status" hidden></p>
+        </div>
+        </div>
+      </section>
+
+      <section class="panel acc" data-acc="login">
+        <h2 class="acc__h">
+          <button type="button" class="acc__head" id="acc-login-btn" aria-expanded="false" aria-controls="acc-login">
+            <span class="acc__titles">
+              <span class="eyebrow">Login &amp; security</span>
+              <span class="acc__title">Change login</span>
+            </span>
+            <span class="acc__right"><span class="chip chip--user" id="loginSummary">—</span><span class="acc__chev" aria-hidden="true"></span></span>
+          </button>
+        </h2>
+        <div class="acc__body" id="acc-login" role="region" aria-labelledby="acc-login-btn" hidden>
+        <p class="sub">Signed in as <strong id="currentUser">—</strong>. The new username and password are emailed to the mail ID you enter.</p>
+
+        <form id="credForm" novalidate>
+          <div class="field">
+            <label for="currentPassword">Current password</label>
+            <input id="currentPassword" name="currentPassword" type="password" autocomplete="current-password" required />
+            <p class="field__error" data-for="currentPassword"></p>
+          </div>
+          <div class="field">
+            <label for="newUsername">New username</label>
+            <input id="newUsername" name="newUsername" autocomplete="username" maxlength="40" required />
+            <p class="field__error" data-for="newUsername"></p>
+          </div>
+          <div class="field">
+            <label for="newPassword">New password</label>
+            <input id="newPassword" name="newPassword" type="password" autocomplete="new-password" minlength="8" required />
+            <p class="field__error" data-for="newPassword"></p>
+          </div>
+          <div class="field">
+            <label for="confirmPassword">Confirm new password</label>
+            <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" required />
+            <p class="field__error" data-for="confirmPassword"></p>
+          </div>
+          <div class="field">
+            <label for="notifyEmail">Send new login to (mail ID)</label>
+            <input id="notifyEmail" name="email" type="email" autocomplete="email" placeholder="you@example.com" required />
+            <p class="field__error" data-for="email"></p>
+          </div>
+          <button class="btn btn--primary btn--block" type="submit" id="credBtn">Change &amp; send email</button>
+          <p class="form-alert" id="credAlert" role="alert" hidden></p>
+          <p class="ok-msg" id="credOk" role="status" hidden></p>
+          <p class="warn-msg" id="credWarn" role="status" hidden></p>
+        </form>
+        <p class="meta" id="mailStatus"></p>
+        </div>
+      </section>
+      </div>
+
+      <section class="panel">
+        <div class="head-row">
+          <div>
+            <p class="eyebrow">Payments</p>
+            <h2>Paid registrations</h2>
+          </div>
+          <div class="btn-row" style="margin: 0">
+            <button class="btn btn--ghost" id="refreshBtn" type="button">Refresh</button>
+            <button class="btn btn--excel" id="excelBtn" type="button" disabled>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+              Download Excel
+            </button>
+          </div>
+        </div>
+        <p class="form-alert" id="excelAlert" role="alert" hidden></p>
+        <div class="filter-bar" id="filterBar">
+          <div class="filter-field">
+            <label for="rangePick">Date</label>
+            <div class="select">
+              <select id="rangePick">
+                <option value="all">All time</option>
+                <option value="today">Today</option>
+                <option value="yesterday">Yesterday</option>
+                <option value="7d">Last 7 days</option>
+                <option value="30d">Last 30 days</option>
+                <option value="month">This month</option>
+                <option value="lastmonth">Last month</option>
+                <option value="custom">Custom range</option>
+              </select>
+            </div>
+          </div>
+          <div class="filter-field">
+            <label for="fromDate">From</label>
+            <input type="date" id="fromDate" />
+          </div>
+          <div class="filter-field">
+            <label for="toDate">To</label>
+            <input type="date" id="toDate" />
+          </div>
+          <button class="btn btn--ghost filter-clear" id="clearRange" type="button" hidden>Clear</button>
+        </div>
+        <p class="form-alert" id="rangeAlert" role="alert" hidden></p>
+        <p class="meta" id="rangeNote" style="margin-top: 10px"></p>
+
+        <div class="stats" style="margin-top: 12px">
+          <div class="stat"><strong id="statCount">0</strong><span>Registrations</span></div>
+          <div class="stat"><strong id="statTotal">₹0</strong><span>Collected</span></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Paid on</th><th>Name</th><th>Phone</th><th>Mail ID</th><th>Seller</th><th>Amount</th><th>Payment ID</th></tr>
+            </thead>
+            <tbody id="regBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="admin.js"></script>
+</body>
+</html>
