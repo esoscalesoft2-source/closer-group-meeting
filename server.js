@@ -235,10 +235,10 @@ function saveFreeBooking(booking) {
   return { entry, existing: false }
 }
 
-// Fill in fields on a saved registration, by its booking id.
+// Fill in fields on a saved registration, by its booking id (free) or payment id (paid).
 function updateRegistration(id, patch) {
   const all = readRegistrations()
-  const row = all.find((r) => r.id === id)
+  const row = all.find((r) => r.id === id || (r.paymentId && r.paymentId === id))
   if (!row) return
   Object.assign(row, patch)
   fs.writeFileSync(`${REG_FILE}.tmp`, JSON.stringify(all, null, 2))
@@ -251,6 +251,20 @@ function updateRegistration(id, patch) {
  * bookings. The outcome is kept on the registration as `closer`, so one that
  * failed is sent again when the same number books again. Never throws.
  */
+// A paid registration goes to Closer once its payment is confirmed and the
+// buyer's details are known — from the browser's confirmation or the webhook,
+// whichever has them first. In flight is remembered so both arriving together
+// send it once; a hand-off that failed is tried again on the next report.
+const closerInFlight = new Set()
+function handOffPaid(paymentId) {
+  const row = readRegistrations().find((r) => r.paymentId === paymentId)
+  if (!row || !row.name || !row.phone || row.closer?.ok || closerInFlight.has(paymentId)) return
+  closerInFlight.add(paymentId)
+  sendToCloser({ ...row, id: paymentId })
+    .catch((e) => console.error('✖ Closer hand-off crashed:', e.message))
+    .finally(() => closerInFlight.delete(paymentId))
+}
+
 async function sendToCloser(entry) {
   if (!CLOSER_API_URL || !CLOSER_API_KEY) return
   let closer
@@ -314,6 +328,11 @@ function currentFee() {
   const fee = Number(readSettings().fee)
   return Number.isInteger(fee) && fee >= MIN_FEE && fee <= MAX_FEE ? fee : DEFAULT_FEE
 }
+
+// Free (Book Now, no payment) unless an admin has switched to Paid on /admin.
+// Free is the default because that is how the page has run; the saved fee is
+// kept either way, so switching back to Paid restores it.
+const isFree = () => readSettings().free !== false
 
 function saveSettings(patch) {
   fs.mkdirSync(DATA_DIR, { recursive: true })
@@ -564,7 +583,8 @@ async function handleRazorpayWebhook(req, res) {
   const known = readRegistrations().find((r) => r.paymentId === paymentId)
   if (known && known.name && known.phone && known.amountPaise != null) {
     status('duplicate')
-    return sendJson(res, 200, { ok: true, result: 'duplicate' })
+    sendJson(res, 200, { ok: true, result: 'duplicate' })
+    return handOffPaid(paymentId) // a hand-off that failed before gets another go
   }
 
   // Who paid: order.paid carries the order (and its notes); payment.captured doesn't,
@@ -611,6 +631,7 @@ async function handleRazorpayWebhook(req, res) {
   status(result)
   if (result === 'new') console.log(`✔ Paid (webhook): ${notes.name} (${notes.phone}) — ${paymentId}`)
   sendJson(res, 200, { ok: true, result })
+  handOffPaid(paymentId)
 }
 
 /* ---------------- admin credentials ---------------- */
@@ -999,6 +1020,7 @@ function handleAdminLogout(req, res) {
 function handleAdminGetSettings(req, res) {
   const s = readSettings()
   sendJson(res, 200, {
+    free: isFree(),
     fee: currentFee(),
     updatedAt: s.updatedAt || null,
     paymentsEnabled: paymentsEnabled(),
@@ -1019,14 +1041,25 @@ async function handleAdminSaveSettings(req, res) {
     return sendJson(res, 400, { error: e.message })
   }
 
+  const free = body.free === true
+  if (free) {
+    const saved = saveSettings({ free: true, updatedAt: new Date().toISOString() })
+    console.log('Registration set to Free')
+    return sendJson(res, 200, { free: true, fee: currentFee(), updatedAt: saved.updatedAt })
+  }
+
   const fee = Number(body.fee)
   if (!Number.isInteger(fee) || fee < MIN_FEE || fee > MAX_FEE) {
     return sendJson(res, 422, { error: `Enter a whole amount between ₹${MIN_FEE} and ₹${MAX_FEE.toLocaleString('en-IN')}.` })
   }
+  // Paid with no way to pay would leave every visitor stuck at a failing button.
+  if (!paymentsEnabled()) {
+    return sendJson(res, 422, { error: 'Connect Razorpay first (Razorpay keys card), or keep registration Free.' })
+  }
 
-  const saved = saveSettings({ fee, updatedAt: new Date().toISOString() })
-  console.log(`Fee changed to ₹${fee}`)
-  sendJson(res, 200, { fee: saved.fee, updatedAt: saved.updatedAt })
+  const saved = saveSettings({ free: false, fee, updatedAt: new Date().toISOString() })
+  console.log(`Registration set to Paid: ₹${fee}`)
+  sendJson(res, 200, { free: false, fee: saved.fee, updatedAt: saved.updatedAt })
 }
 
 /* ---------------- date range (IST whole days) ---------------- */
@@ -1152,6 +1185,11 @@ async function handleBook(req, res) {
   }
   // A field people never see: filled in, it is a bot. Answer as if booked.
   if (body.website) return sendJson(res, 200, { status: 'BOOKED', bookingId: null })
+  // Paid registration: a seat comes with a payment, so this free route is closed
+  // (unless Razorpay is disconnected, when the page falls back to Free — see /api/config).
+  if (!isFree() && paymentsEnabled()) {
+    return sendJson(res, 409, { error: 'Registration now needs payment. Refresh the page to pay and book.' })
+  }
 
   const { errors, booking } = validateBooking(body)
   if (Object.keys(errors).length) return sendJson(res, 422, { error: 'Please fix the highlighted fields.', fields: errors })
@@ -1168,10 +1206,13 @@ async function handleBook(req, res) {
 }
 
 async function handleConfig(req, res) {
-  sendJson(res, 200, { fee: currentFee(), currency: 'INR', paymentsEnabled: paymentsEnabled() })
+  // Paid only counts when Razorpay can take the money; otherwise the page stays bookable as Free.
+  const free = isFree() || !paymentsEnabled()
+  sendJson(res, 200, { free, fee: currentFee(), currency: 'INR', paymentsEnabled: paymentsEnabled() })
 }
 
 async function handleCreateOrder(req, res) {
+  if (isFree()) return sendJson(res, 409, { error: 'Registration is free now. Refresh the page and press Book Now.' })
   const creds = rzpConfig()
   if (!creds.keyId || !creds.keySecret) {
     return sendJson(res, 503, { error: 'Payments are not set up yet. Please try again later.' })
@@ -1283,6 +1324,7 @@ async function handleVerify(req, res) {
   console.log(`✔ Paid: ${entry.name} (${entry.phone}) — ${paymentId}`)
 
   sendJson(res, 200, { status: 'PAID', paymentId, orderId })
+  handOffPaid(paymentId) // after the answer, so the buyer never waits on Closer
 }
 
 /* ---------------- server ---------------- */

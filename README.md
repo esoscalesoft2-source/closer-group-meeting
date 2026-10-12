@@ -29,7 +29,7 @@ Four settings cards in an accordion:
 
 | Card | What it does |
 |---|---|
-| **Set the amount** | Registration fee in ₹. The landing page shows it and Razorpay charges it. |
+| **Set the amount** | **Free** (visitors book with just their details) or **Paid** (they pay this amount with Razorpay to book). Paid needs Razorpay connected. The landing page wording and button follow the choice. |
 | **Razorpay keys** | Key ID + Key Secret, checked with Razorpay before saving, with Test / Live mode shown. Also holds the **webhook** URL and secret, and when the last webhook arrived. |
 | **Email (SMTP)** | Gmail / Outlook / Zoho / custom. Checked before saving, plus a "Send test" button. |
 | **Change login** | New username and password, emailed to the mail ID you enter. |
@@ -74,7 +74,7 @@ npm start
 1. **Razorpay keys**: paste the Key ID and Key Secret from Razorpay Dashboard → Account & Settings → API Keys. Start with `rzp_test_` keys and switch to `rzp_live_` when you're ready for real payments.
 2. **Webhook** (in the same card, once the site is on a public https address): press **Generate**, then in Razorpay Dashboard → Accounts & Settings → Webhooks → Add New Webhook, paste the **Webhook URL** and the same secret and tick **payment.captured** and **order.paid**. Save in both places. The card shows "Receiving" once Razorpay's first webhook arrives.
 3. **Email (SMTP)**: for Gmail, use `smtp.gmail.com`, port `587`, your Gmail address and a Google **App Password** (Google Account → Security → 2-Step Verification → App passwords). A normal Gmail password will not work. Press **Send test** to confirm.
-4. **Set the amount**: enter the registration fee and Save.
+4. **Set the amount**: choose **Free**, or **Paid** with the fee, and Save.
 5. **Change login**: replace the starting password from `.env` with your own.
 
 ---
@@ -167,7 +167,7 @@ Public:
 | Method | Path | |
 |---|---|---|
 | `POST` | `/api/book` | Book a seat — no fee: checks the form, saves the booking (one per phone number) and hands it to Closer |
-| `GET` | `/api/config` | Current fee and whether payments are on |
+| `GET` | `/api/config` | Free or Paid, the fee, and whether payments are on |
 | `POST` | `/api/create-order` | Checks the form and creates a Razorpay order |
 | `POST` | `/api/verify-payment` | Checks the payment signature and saves the registration |
 | `POST` | `/api/webhooks/razorpay` | Razorpay webhook (`payment.captured`, `order.paid`); signature-checked |

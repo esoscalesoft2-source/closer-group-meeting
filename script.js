@@ -82,7 +82,46 @@ Object.keys(rules).forEach((field) => {
   })
 })
 
-/* ---------------- Book Now: details only, no fee ---------------- */
+/* ---------------- Free or Paid (set on /admin) ---------------- */
+
+// The page ships with the Free wording. When the admin has set a fee, the
+// server says so and these swap in; the Free text is kept to switch back.
+const PAID_COPY = {
+  'fee-value': (f) => f,
+  'fee-hint': () => 'Pay once with Razorpay — UPI, cards or net banking. Your seat is booked as soon as you pay.',
+  'form-note': (f) => `Registration ${f} · Secure payment by Razorpay · Join link on WhatsApp &amp; email`,
+  'trust-fee': () => 'Secure payment by Razorpay',
+  'how-intro': () => 'Book in a minute — pay once with Razorpay — and the join link comes to you. The rest happens live, with your questions answered.',
+  'how-step': (f) => `Pay ${f} with Razorpay and your seat is booked at once.`,
+  'pricing-title': (f) => `${f} <span class="accent">for your seat.</span>`,
+  'pricing-text': (f) => `Registration for the group meeting is ${f}. Fill in your details, pay securely with Razorpay, and your seat is booked; your join link follows on WhatsApp and email.`,
+  'price-amount': (f) => f,
+  'price-sub': () => 'One-time registration · one live session',
+  'price-check': () => 'Secure payment with Razorpay',
+  'faq-fee': (f) => `Yes — ${f}, paid once with Razorpay (UPI, cards or net banking). Fill in your details, press Pay &amp; book, and your seat is booked as soon as you pay.`,
+}
+const FREE_COPY = Object.fromEntries([...document.querySelectorAll('[data-copy]')].map((el) => [el.dataset.copy, el.innerHTML]))
+
+const formatRupees = (n) => `₹${Number(n).toLocaleString('en-IN')}/-`
+let pricing = { free: true, fee: 0 }
+
+function applyPricing(p) {
+  pricing = p
+  const fee = formatRupees(p.fee)
+  document.querySelectorAll('[data-copy]').forEach((el) => {
+    const key = el.dataset.copy
+    // Fixed text from this file; the only number in it is the server's fee.
+    el.innerHTML = p.free ? FREE_COPY[key] : PAID_COPY[key]?.(fee) ?? FREE_COPY[key]
+  })
+  setBusy(false)
+}
+
+fetch('/api/config')
+  .then((r) => r.json())
+  .then((cfg) => applyPricing({ free: cfg.free !== false, fee: cfg.fee }))
+  .catch(() => {}) // stays Free; the server refuses a free booking if that is wrong
+
+/* ---------------- Book: Free (details only) or Paid (Razorpay) ---------------- */
 const formAlert = document.getElementById('formAlert')
 
 function setAlert(message) {
@@ -90,9 +129,36 @@ function setAlert(message) {
   formAlert.hidden = !message
 }
 
-function setBusy(busy) {
+function setBusy(busy, label) {
   bookBtn.disabled = busy
-  bookBtn.textContent = busy ? 'Booking…' : 'Book Now'
+  bookBtn.textContent = busy ? label || 'Booking…' : pricing.free ? 'Book Now' : `Pay ${formatRupees(pricing.fee)} & book`
+}
+
+async function postJson(url, body) {
+  const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+  const data = await res.json().catch(() => ({}))
+  return { res, data }
+}
+
+// Razorpay's checkout script, loaded only when a payment is actually started.
+let razorpayLoading = null
+function loadRazorpay() {
+  if (window.Razorpay) return Promise.resolve()
+  razorpayLoading ||= new Promise((resolve, reject) => {
+    const s = document.createElement('script')
+    s.src = 'https://checkout.razorpay.com/v1/checkout.js'
+    s.onload = resolve
+    s.onerror = () => {
+      razorpayLoading = null
+      reject(new Error('load'))
+    }
+    document.head.append(s)
+  })
+  return razorpayLoading
+}
+
+function showFieldErrors(data) {
+  Object.entries(data.fields || {}).forEach(([field, msg]) => showError(field, msg))
 }
 
 form.addEventListener('submit', async (e) => {
@@ -108,17 +174,18 @@ form.addEventListener('submit', async (e) => {
     website: form.website.value,
   }
 
+  if (pricing.free) return bookFree(booking)
+  return bookPaid(booking)
+})
+
+async function bookFree(booking) {
   setBusy(true)
   try {
-    const res = await fetch('/api/book', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(booking),
-    })
-    const data = await res.json().catch(() => ({}))
+    const { res, data } = await postJson('/api/book', booking)
     setBusy(false)
+    if (res.status === 409) return refreshPricing()
     if (!res.ok) {
-      Object.entries(data.fields || {}).forEach(([field, msg]) => showError(field, msg))
+      showFieldErrors(data)
       setAlert(data.error || 'Could not book your seat. Please try again.')
       return
     }
@@ -127,12 +194,82 @@ form.addEventListener('submit', async (e) => {
     setBusy(false)
     setAlert('Network error. Please check your connection and try again.')
   }
-})
+}
+
+async function bookPaid(booking) {
+  setBusy(true, 'Opening payment…')
+  let order
+  try {
+    await loadRazorpay()
+    const { res, data } = await postJson('/api/create-order', booking)
+    if (res.status === 409) {
+      setBusy(false)
+      return refreshPricing()
+    }
+    if (!res.ok) {
+      setBusy(false)
+      showFieldErrors(data)
+      return setAlert(data.error || 'Could not start the payment. Please try again.')
+    }
+    order = data
+  } catch {
+    setBusy(false)
+    return setAlert('Could not open the payment window. Check your connection and try again.')
+  }
+
+  // The server's amount is what is charged; show it if the page had an older one.
+  if (order.amount / 100 !== pricing.fee) applyPricing({ free: false, fee: order.amount / 100 })
+  setBusy(true, 'Waiting for payment…')
+
+  const rzp = new window.Razorpay({
+    key: order.keyId,
+    order_id: order.orderId,
+    amount: order.amount,
+    currency: order.currency,
+    name: order.businessName,
+    description: order.description,
+    image: `${location.origin}/assets/eso-wolf-icon.png`,
+    prefill: order.prefill,
+    notes: { seller_type: SELLER_LABELS[booking.sellerType] },
+    theme: { color: '#fd761a' },
+    modal: { ondismiss: () => setBusy(false) },
+    handler: async (response) => {
+      setBusy(true, 'Confirming…')
+      try {
+        const { data } = await postJson('/api/verify-payment', response)
+        setBusy(false)
+        if (data.status === 'PAID') {
+          openModal({ ...booking, phone: `+91${booking.phone}`, paid: order.amount / 100, paymentId: data.paymentId })
+        } else {
+          setAlert(`We received your payment but couldn't confirm it yet. Please keep this ID and contact us: ${response.razorpay_payment_id}`)
+        }
+      } catch {
+        setBusy(false)
+        setAlert(`Payment done, but confirmation failed due to a network error. Payment ID: ${response.razorpay_payment_id}`)
+      }
+    },
+  })
+  rzp.on('payment.failed', (resp) => {
+    setBusy(false)
+    setAlert(`Payment failed: ${resp.error?.description || 'please try again.'}`)
+  })
+  rzp.open()
+}
+
+// The admin changed Free/Paid while this page was open: reload the price and say so.
+async function refreshPricing() {
+  try {
+    const cfg = await (await fetch('/api/config')).json()
+    applyPricing({ free: cfg.free !== false, fee: cfg.fee })
+  } catch {}
+  setAlert(`${pricing.free ? 'Registration is free now.' : `The registration fee is now ${formatRupees(pricing.fee)}.`} Please press the button again.`)
+}
 
 /* ---------------- Modal ---------------- */
 const modal = document.getElementById('payModal')
 
 function openModal(b) {
+  document.getElementById('modalTitle').textContent = b.paymentId ? 'Payment successful!' : 'Seat booked!'
   document.getElementById('modalText').textContent = b.alreadyBooked
     ? 'This number already has a seat booked — here it is. We’ll send the join link on WhatsApp and email.'
     : 'Your seat for the group meeting is booked. We’ll send the join link on WhatsApp and email.'
@@ -142,6 +279,8 @@ function openModal(b) {
     ['Mail ID', b.email],
     ['Seller', SELLER_LABELS[b.sellerType]],
     ['Booking ID', b.bookingId],
+    ['Paid', b.paid ? formatRupees(b.paid) : null],
+    ['Payment ID', b.paymentId],
   ].filter(([, v]) => v)
   const summary = document.getElementById('modalSummary')
   summary.replaceChildren(

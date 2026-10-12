@@ -51,23 +51,56 @@ $('logoutBtn').addEventListener('click', async () => {
   show('login')
 })
 
-/* ---------------- fee ---------------- */
+/* ---------------- fee: Free or Paid ---------------- */
 
 const feeInput = $('fee')
+const feeForm = $('feeForm')
+let feeState = { free: true, fee: 999, paymentsEnabled: false }
+
+const selectedMode = () => feeForm.querySelector('input[name="mode"]:checked')?.value || 'free'
+
+function feeError(message) {
+  $('feeError').textContent = message || ''
+  feeInput.closest('.field').classList.toggle('has-error', Boolean(message))
+}
+
+// What the landing page will show for the choice on screen (saved or not).
+function paintFeePreview() {
+  const free = selectedMode() === 'free'
+  $('feeField').hidden = free
+  $('feePreview').textContent = free ? 'Free' : feeInput.value ? rupees(feeInput.value) : '—'
+  $('feePreview').closest('.fee-preview').classList.toggle('is-free', free)
+}
+
+function paintFeeSummary(s) {
+  const chip = $('feeSummary')
+  chip.className = `chip ${s.free ? 'chip--free' : 'chip--fee'}`
+  chip.textContent = s.free ? 'Free' : rupees(s.fee)
+}
+
+feeForm.querySelectorAll('input[name="mode"]').forEach((r) =>
+  r.addEventListener('change', () => {
+    feeError('')
+    $('saveOk').hidden = true
+    paintFeePreview()
+    if (selectedMode() === 'paid') feeInput.focus()
+  }),
+)
 
 feeInput.addEventListener('input', () => {
   feeInput.value = feeInput.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 7)
-  $('feePreview').textContent = feeInput.value ? rupees(feeInput.value) : '—'
-  $('feeError').textContent = ''
-  feeInput.closest('.field').classList.remove('has-error')
+  feeError('')
   $('saveOk').hidden = true
+  paintFeePreview()
 })
 
 function renderSettings(s) {
+  feeState = s
+  feeForm.querySelector(`input[name="mode"][value="${s.free ? 'free' : 'paid'}"]`).checked = true
   feeInput.value = s.fee
-  $('feePreview').textContent = rupees(s.fee)
-  $('feeSummary').textContent = rupees(s.fee)
-  $('updatedAt').textContent = s.updatedAt ? `Last changed ${dateTime(s.updatedAt)}` : 'Using the default fee from .env'
+  paintFeePreview()
+  paintFeeSummary(s)
+  $('updatedAt').textContent = s.updatedAt ? `Last changed ${dateTime(s.updatedAt)}` : 'Not changed yet — the page starts as Free.'
 
   const chip = $('rzpChip')
   if (!s.paymentsEnabled) {
@@ -79,30 +112,26 @@ function renderSettings(s) {
   }
 }
 
-$('feeForm').addEventListener('submit', async (e) => {
+feeForm.addEventListener('submit', async (e) => {
   e.preventDefault()
+  feeError('')
+  const free = selectedMode() === 'free'
   const fee = Number(feeInput.value)
-  if (!fee) {
-    $('feeError').textContent = 'Enter an amount.'
-    feeInput.closest('.field').classList.add('has-error')
-    return
-  }
+  if (!free && !fee) return feeError('Enter an amount.')
 
   $('saveBtn').disabled = true
-  const { ok, status, data } = await api('PUT', '/api/admin/settings', { fee }).catch(() => ({ data: {} }))
+  const { ok, status, data } = await api('PUT', '/api/admin/settings', free ? { free: true } : { free: false, fee }).catch(() => ({ data: {} }))
   $('saveBtn').disabled = false
 
   if (status === 401) return show('login')
-  if (!ok) {
-    $('feeError').textContent = data.error || 'Could not save. Please try again.'
-    feeInput.closest('.field').classList.add('has-error')
-    return
-  }
+  if (!ok) return feeError(data.error || 'Could not save. Please try again.')
 
-  $('feePreview').textContent = rupees(data.fee)
-  $('feeSummary').textContent = rupees(data.fee)
+  feeState = { ...feeState, free: data.free, fee: data.fee }
+  paintFeeSummary(feeState)
   $('updatedAt').textContent = `Last changed ${dateTime(data.updatedAt)}`
-  $('saveOk').textContent = `Saved. The landing page now shows ${rupees(data.fee)}.`
+  $('saveOk').textContent = data.free
+    ? 'Saved. Registration is Free — visitors book with just their details.'
+    : `Saved. Visitors now pay ${rupees(data.fee)} with Razorpay to book.`
   $('saveOk').hidden = false
 })
 
@@ -581,11 +610,17 @@ function renderRegistrations(list) {
           cell(r.source === 'free' ? 'Free' : r.amountPaise != null ? rupees(r.amountPaise / 100) : null),
           cell(r.paymentId || r.id, 'mono'),
           // A website booking handed to Closer's group class, or why not.
-          cell(r.closer ? (r.closer.ok ? `In ${r.closer.className || 'group class'}` : `Not sent: ${r.closer.error}`) : null),
+          cell(
+            r.closer ? (r.closer.ok ? `In ${r.closer.className || 'group class'}` : `Not sent: ${r.closer.error}`) : null,
+            r.closer ? (r.closer.ok ? 'is-ok' : 'is-bad') : undefined,
+          ),
         )
         return tr
       }),
     )
+    // Phones show each row as a card; every value carries its column name.
+    const labels = [...body.closest('table').querySelectorAll('thead th')].map((th) => th.textContent)
+    body.querySelectorAll('tr').forEach((tr) => [...tr.children].forEach((td, i) => (td.dataset.label = labels[i] || '')))
   }
 
   const total = list.reduce((sum, r) => sum + (r.amountPaise || 0), 0) / 100

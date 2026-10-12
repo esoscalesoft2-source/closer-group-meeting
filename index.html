@@ -66,8 +66,8 @@
             <div class="console__info">
               <div class="tile tile--wide">
                 <p class="tile__label mono"><span class="tile__dot"></span>Registration fee</p>
-                <p class="tile__value">Free</p>
-                <p class="tile__hint">Just your details — no payment. Your seat is booked at once.</p>
+                <p class="tile__value" data-copy="fee-value">Free</p>
+                <p class="tile__hint" data-copy="fee-hint">Just your details — no payment. Your seat is booked at once.</p>
               </div>
               <div class="tile">
                 <p class="tile__label mono">Format</p>
@@ -145,7 +145,7 @@
 
                 <button type="submit" class="btn btn--primary btn--block btn--lg" id="payBtn">Book Now</button>
                 <p class="form-alert" id="formAlert" role="alert" hidden></p>
-                <p class="form-card__note">No registration fee · Join link on WhatsApp &amp; email</p>
+                <p class="form-card__note" data-copy="form-note">No registration fee · Join link on WhatsApp &amp; email</p>
               </form>
             </div>
           </div>
@@ -154,7 +154,7 @@
 
       <div class="container">
         <ul class="trust">
-          <li><span class="trust__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"/></svg></span>No registration fee</li>
+          <li><span class="trust__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"/></svg></span><span data-copy="trust-fee">No registration fee</span></li>
           <li><span class="trust__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.8 7L4 20l1-5A8 8 0 1 1 21 12z"/></svg></span>Join link on WhatsApp &amp; email</li>
           <li><span class="trust__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 8h14M5 12h10M5 16h7"/></svg></span>English, Tamil &amp; Hindi</li>
         </ul>
@@ -204,7 +204,7 @@
         <div class="split__copy">
           <p class="eyebrow">How it works</p>
           <h2>The ESO Wolf way. <span class="muted">Five steps from booking to a plan.</span></h2>
-          <p>Book in a minute — no payment — and the join link comes to you. The rest happens live, with your questions answered.</p>
+          <p data-copy="how-intro">Book in a minute — no payment — and the join link comes to you. The rest happens live, with your questions answered.</p>
         </div>
         <ol class="timeline">
           <li>
@@ -213,7 +213,7 @@
           </li>
           <li>
             <span class="timeline__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"/></svg></span>
-            <div><h3>Seat booked</h3><p>Press Book Now and your seat is booked at once — no registration fee.</p></div>
+            <div><h3>Seat booked</h3><p data-copy="how-step">Press Book Now and your seat is booked at once — no registration fee.</p></div>
           </li>
           <li>
             <span class="timeline__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.8 7L4 20l1-5A8 8 0 1 1 21 12z"/></svg></span>
@@ -378,21 +378,21 @@
       <div class="container pricing">
         <div class="split__copy">
           <p class="pill pill--quiet">Registration</p>
-          <h2>No fee. <span class="accent">Just your details.</span></h2>
-          <p>There is no registration fee for the group meeting. Fill in your details and your seat is booked; your join link follows on WhatsApp and email.</p>
+          <h2 data-copy="pricing-title">No fee. <span class="accent">Just your details.</span></h2>
+          <p data-copy="pricing-text">There is no registration fee for the group meeting. Fill in your details and your seat is booked; your join link follows on WhatsApp and email.</p>
         </div>
         <article class="price">
           <span class="price__tag mono">Group meeting</span>
           <h3>Your seat</h3>
-          <p class="price__amount">Free</p>
-          <p class="price__sub">No registration fee · one live session</p>
+          <p class="price__amount" data-copy="price-amount">Free</p>
+          <p class="price__sub" data-copy="price-sub">No registration fee · one live session</p>
           <a href="#book" class="btn btn--primary btn--block">Book your seat</a>
           <ul class="checks">
             <li>Live strategy walkthrough</li>
             <li>Open Q&amp;A for your store</li>
             <li>English, Tamil &amp; Hindi</li>
             <li>Join link on WhatsApp &amp; email</li>
-            <li>Booked at once — no payment</li>
+            <li data-copy="price-check">Booked at once — no payment</li>
           </ul>
         </article>
       </div>
@@ -420,7 +420,7 @@
         </details>
         <details>
           <summary>Is there a registration fee?</summary>
-          <p>No. Fill in your name, phone number, mail ID and seller type, press Book Now, and your seat is booked.</p>
+          <p data-copy="faq-fee">No. Fill in your name, phone number, mail ID and seller type, press Book Now, and your seat is booked.</p>
         </details>
       </div>
     </section>
