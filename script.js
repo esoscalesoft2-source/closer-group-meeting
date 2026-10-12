@@ -129,10 +129,26 @@ function setAlert(message) {
   formAlert.hidden = !message
 }
 
+// While booking: a spinner and words on the button, and the form locked, so a
+// second press can't send it twice and the visitor can see something is happening.
 function setBusy(busy, label) {
   bookBtn.disabled = busy
-  bookBtn.textContent = busy ? label || 'Booking…' : pricing.free ? 'Book Now' : `Pay ${formatRupees(pricing.fee)} & book`
+  bookBtn.classList.toggle('is-loading', busy)
+  bookBtn.setAttribute('aria-busy', String(busy))
+  form.classList.toggle('is-busy', busy)
+  if (busy) {
+    const spinner = document.createElement('span')
+    spinner.className = 'spinner'
+    spinner.setAttribute('aria-hidden', 'true')
+    bookBtn.replaceChildren(spinner, document.createTextNode(label || 'Booking your seat…'))
+  } else {
+    bookBtn.textContent = pricing.free ? 'Book Now' : `Pay ${formatRupees(pricing.fee)} & book`
+  }
 }
+
+// A booking answers in milliseconds; holding the spinner a moment longer lets the
+// visitor see it was sent rather than wondering whether the press did anything.
+const atLeast = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 async function postJson(url, body) {
   const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
@@ -174,6 +190,7 @@ form.addEventListener('submit', async (e) => {
     website: form.website.value,
   }
 
+  if (bookBtn.disabled) return // already booking
   if (pricing.free) return bookFree(booking)
   return bookPaid(booking)
 })
@@ -181,7 +198,7 @@ form.addEventListener('submit', async (e) => {
 async function bookFree(booking) {
   setBusy(true)
   try {
-    const { res, data } = await postJson('/api/book', booking)
+    const [{ res, data }] = await Promise.all([postJson('/api/book', booking), atLeast(800)])
     setBusy(false)
     if (res.status === 409) return refreshPricing()
     if (!res.ok) {
@@ -189,7 +206,7 @@ async function bookFree(booking) {
       setAlert(data.error || 'Could not book your seat. Please try again.')
       return
     }
-    openModal({ ...booking, phone: `+91${booking.phone}`, bookingId: data.bookingId, alreadyBooked: data.alreadyBooked })
+    openModal({ ...booking, phone: `+91${booking.phone}`, bookingId: data.bookingId, alreadyBooked: data.alreadyBooked, bookedAt: data.bookedAt })
   } catch {
     setBusy(false)
     setAlert('Network error. Please check your connection and try again.')
@@ -269,10 +286,19 @@ async function refreshPricing() {
 const modal = document.getElementById('payModal')
 
 function openModal(b) {
-  document.getElementById('modalTitle').textContent = b.paymentId ? 'Payment successful!' : 'Seat booked!'
-  document.getElementById('modalText').textContent = b.alreadyBooked
-    ? 'This number already has a seat booked — here it is. We’ll send the join link on WhatsApp and email.'
-    : 'Your seat for the group meeting is booked. We’ll send the join link on WhatsApp and email.'
+  // Booking again with the same number is the same seat — said plainly, so it
+  // doesn't read as a booking that failed.
+  const again = Boolean(b.alreadyBooked)
+  const icon = modal.querySelector('.modal__check')
+  icon.textContent = again ? 'i' : '✓'
+  icon.classList.toggle('modal__check--info', again)
+  document.getElementById('modalTitle').textContent = b.paymentId ? 'Payment successful!' : again ? 'You’re already booked' : 'Seat booked!'
+  const when = b.bookedAt
+    ? new Date(b.bookedAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })
+    : null
+  document.getElementById('modalText').textContent = again
+    ? `This number already has a seat${when ? ` (booked on ${when})` : ''}. One seat per number — your join link was sent to WhatsApp and email when you first booked.`
+    : 'Your seat for the group meeting is booked. The join link is on its way to your WhatsApp and email.'
   const rows = [
     ['Name', b.name],
     ['Phone', b.phone],

@@ -1199,7 +1199,7 @@ async function handleBook(req, res) {
 
   const { entry, existing } = saveFreeBooking(booking)
   if (!existing) console.log(`✔ Booked: ${entry.name} (${entry.phone}) — ${entry.id}`)
-  sendJson(res, 200, { status: 'BOOKED', bookingId: entry.id, alreadyBooked: existing })
+  sendJson(res, 200, { status: 'BOOKED', bookingId: entry.id, alreadyBooked: existing, bookedAt: entry.bookedAt })
   // After the answer, so the visitor never waits on Closer. A booking Closer
   // has not taken yet — new, or failed before — is sent.
   if (!entry.closer?.ok) sendToCloser(entry).catch((e) => console.error('✖ Closer hand-off crashed:', e.message))
