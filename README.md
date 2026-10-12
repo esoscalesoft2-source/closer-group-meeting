@@ -93,6 +93,7 @@ npm start
 | `RAZORPAY_WEBHOOK_SECRET` | No | Fallback if no webhook secret is saved on /admin. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | No | Fallback if no email settings are saved on /admin. |
 | `PUBLIC_URL` | No | Public address of the site, e.g. `https://meet.example.com`. Used for the webhook URL shown on /admin and the login link in emails. Defaults to the address the admin page was opened on. |
+| `CLOSER_API_URL`, `CLOSER_API_KEY` | No | Closer, where every booking becomes a client in the group class marked "Website bookings join this class" and gets its WhatsApp reminders with each class's Teams link. The key is made in Closer → Settings → Integrations. Empty: bookings stay on this site. |
 | `DATA_DIR` | No | Where data is stored (default `./data`). |
 
 Settings saved on /admin always win over `.env`.
@@ -165,6 +166,7 @@ Public:
 
 | Method | Path | |
 |---|---|---|
+| `POST` | `/api/book` | Book a seat — no fee: checks the form, saves the booking (one per phone number) and hands it to Closer |
 | `GET` | `/api/config` | Current fee and whether payments are on |
 | `POST` | `/api/create-order` | Checks the form and creates a Razorpay order |
 | `POST` | `/api/verify-payment` | Checks the payment signature and saves the registration |
@@ -181,5 +183,5 @@ Admin (login required):
 | `GET` `PUT` `DELETE` | `/api/admin/smtp` | Email settings |
 | `POST` | `/api/admin/smtp/test` | Send a test email |
 | `POST` | `/api/admin/credentials` | Change login and email it |
-| `GET` | `/api/admin/registrations?from=&to=` | Paid registrations (dates `YYYY-MM-DD`, IST) |
+| `GET` | `/api/admin/registrations?from=&to=` | Registrations (dates `YYYY-MM-DD`, IST), with whether Closer took each |
 | `GET` | `/api/admin/registrations.xlsx?from=&to=` | Same, as an Excel file |

@@ -1,23 +1,8 @@
-// ESO Closer — group meeting landing page
-
-// The fee is set on the server (REGISTRATION_FEE in .env); this is only for display.
-let registrationFee = null
+// ESO Wolf — group meeting landing page
 
 const SELLER_LABELS = { existing: 'Existing seller', new: 'New seller' }
 
-const formatRupees = (n) => `₹${n.toLocaleString('en-IN')}/-`
-
-function showFee(fee) {
-  registrationFee = fee
-  document.getElementById('feeLabel').textContent = formatRupees(fee)
-  document.querySelector('.pay-amount').textContent = formatRupees(fee)
-}
-
 document.getElementById('year').textContent = new Date().getFullYear()
-fetch('/api/config')
-  .then((r) => r.json())
-  .then((cfg) => showFee(cfg.fee))
-  .catch(() => {})
 
 /* ---------------- Mobile nav ---------------- */
 const navToggle = document.getElementById('navToggle')
@@ -40,7 +25,7 @@ document.querySelectorAll('a[href="#book"]').forEach((a) =>
 )
 
 /* ---------------- Active link on scroll ---------------- */
-const sections = ['home', 'about', 'services'].map((id) => document.getElementById(id))
+const sections = ['home', 'about', 'how', 'services', 'faq'].map((id) => document.getElementById(id)).filter(Boolean)
 const navAnchors = [...navLinks.querySelectorAll('a:not(.btn)')]
 
 const spy = new IntersectionObserver(
@@ -56,7 +41,7 @@ sections.forEach((s) => spy.observe(s))
 
 /* ---------------- Form validation ---------------- */
 const form = document.getElementById('bookingForm')
-const payBtn = document.getElementById('payBtn')
+const bookBtn = document.getElementById('payBtn')
 
 const phoneInput = form.phone
 phoneInput.addEventListener('input', () => {
@@ -97,7 +82,7 @@ Object.keys(rules).forEach((field) => {
   })
 })
 
-/* ---------------- Pay Now (Razorpay) ---------------- */
+/* ---------------- Book Now: details only, no fee ---------------- */
 const formAlert = document.getElementById('formAlert')
 
 function setAlert(message) {
@@ -105,19 +90,9 @@ function setAlert(message) {
   formAlert.hidden = !message
 }
 
-function setBusy(busy, label = 'Processing… ') {
-  payBtn.disabled = busy
-  payBtn.firstChild.textContent = busy ? label : 'Pay Now '
-}
-
-async function postJson(url, body) {
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-  const data = await res.json().catch(() => ({}))
-  return { ok: res.ok, data }
+function setBusy(busy) {
+  bookBtn.disabled = busy
+  bookBtn.textContent = busy ? 'Booking…' : 'Book Now'
 }
 
 form.addEventListener('submit', async (e) => {
@@ -130,86 +105,44 @@ form.addEventListener('submit', async (e) => {
     phone: form.phone.value,
     email: form.email.value.trim(),
     sellerType: form.sellerType.value,
-  }
-
-  if (typeof window.Razorpay !== 'function') {
-    setAlert('Payment window could not load. Check your internet connection and try again.')
-    return
+    website: form.website.value,
   }
 
   setBusy(true)
-  let order
   try {
-    const { ok, data } = await postJson('/api/create-order', booking)
-    if (!ok) {
+    const res = await fetch('/api/book', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(booking),
+    })
+    const data = await res.json().catch(() => ({}))
+    setBusy(false)
+    if (!res.ok) {
       Object.entries(data.fields || {}).forEach(([field, msg]) => showError(field, msg))
-      setAlert(data.error || 'Could not start the payment. Please try again.')
-      setBusy(false)
+      setAlert(data.error || 'Could not book your seat. Please try again.')
       return
     }
-    order = data
-    // If the admin changed the fee since this page loaded, show what is actually charged.
-    showFee(order.amount / 100)
+    openModal({ ...booking, phone: `+91${booking.phone}`, bookingId: data.bookingId, alreadyBooked: data.alreadyBooked })
   } catch {
+    setBusy(false)
     setAlert('Network error. Please check your connection and try again.')
-    setBusy(false)
-    return
   }
-
-  const rzp = new window.Razorpay({
-    key: order.keyId,
-    order_id: order.orderId,
-    amount: order.amount,
-    currency: order.currency,
-    name: order.businessName,
-    description: order.description,
-    image: `${location.origin}/assets/eso-closer.png`,
-    prefill: order.prefill,
-    notes: { seller_type: SELLER_LABELS[booking.sellerType] },
-    theme: { color: '#fd761a' },
-    modal: {
-      // Closed the popup without paying.
-      ondismiss: () => setBusy(false),
-    },
-    handler: async (response) => {
-      setBusy(true, 'Confirming… ')
-      try {
-        const { data } = await postJson('/api/verify-payment', response)
-        setBusy(false)
-        if (data.status === 'PAID') {
-          openModal({ ...booking, phone: `+91${booking.phone}`, amount: order.amount / 100, paymentId: data.paymentId })
-        } else {
-          setAlert(
-            `We received your payment but couldn't confirm it yet. Please keep this ID and contact us: ${response.razorpay_payment_id}`,
-          )
-        }
-      } catch {
-        setBusy(false)
-        setAlert(`Payment done, but confirmation failed due to a network error. Payment ID: ${response.razorpay_payment_id}`)
-      }
-    },
-  })
-
-  rzp.on('payment.failed', (resp) => {
-    setBusy(false)
-    setAlert(`Payment failed: ${resp.error?.description || 'please try again.'}`)
-  })
-
-  rzp.open()
 })
 
 /* ---------------- Modal ---------------- */
 const modal = document.getElementById('payModal')
 
 function openModal(b) {
+  document.getElementById('modalText').textContent = b.alreadyBooked
+    ? 'This number already has a seat booked — here it is. We’ll send the join link on WhatsApp and email.'
+    : 'Your seat for the group meeting is booked. We’ll send the join link on WhatsApp and email.'
   const rows = [
     ['Name', b.name],
     ['Phone', b.phone],
     ['Mail ID', b.email],
     ['Seller', SELLER_LABELS[b.sellerType]],
-    ['Paid', formatRupees(b.amount)],
-    ['Payment ID', b.paymentId],
-  ]
+    ['Booking ID', b.bookingId],
+  ].filter(([, v]) => v)
   const summary = document.getElementById('modalSummary')
   summary.replaceChildren(
     ...rows.flatMap(([k, v]) => {

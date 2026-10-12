@@ -3,12 +3,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>ESO Closer · Group Meeting</title>
-  <meta name="description" content="Join the ESO Closer group meeting for e-commerce sellers — live strategy, Q&A and a clear growth plan. Book your seat today." />
-  <link rel="icon" href="assets/eso-closer.png" />
+  <title>ESO Wolf · Group Meeting</title>
+  <meta name="description" content="Join the ESO Wolf group meeting for e-commerce sellers — live strategy, Q&A and a clear growth plan. Book your seat today." />
+  <meta name="theme-color" content="#0b0b0c" />
+  <link rel="icon" type="image/png" href="assets/favicon.png" />
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -16,14 +18,16 @@
   <!-- ================= NAVBAR ================= -->
   <header class="nav" id="top">
     <div class="container nav__inner">
-      <a href="#home" class="nav__brand" aria-label="ESO Closer home">
-        <img src="assets/eso-closer.png" alt="ESO Closer" />
+      <a href="#home" class="nav__brand" aria-label="ESO Wolf home">
+        <img src="assets/eso-wolf.png" alt="ESO Wolf" />
       </a>
 
       <nav class="nav__links" id="navLinks" aria-label="Main">
         <a href="#home" class="is-active">Home</a>
         <a href="#about">About</a>
+        <a href="#how">How it works</a>
         <a href="#services">Services</a>
+        <a href="#faq">FAQ</a>
         <a href="#book" class="btn btn--primary nav__cta">Book Now</a>
       </nav>
 
@@ -34,216 +38,403 @@
   </header>
 
   <main>
-    <!-- ================= HERO + FORM ================= -->
+    <!-- ================= HERO ================= -->
     <section class="hero" id="home">
       <div class="hero__glow" aria-hidden="true"></div>
-      <div class="container hero__grid">
-        <div class="hero__copy">
-          <p class="eyebrow eyebrow--light">Live group meeting · For e-commerce sellers</p>
-          <h1>Close the gap between <span class="accent">interested</span> and <span class="accent">paid.</span></h1>
-          <p class="hero__lead">
-            One focused group session with the ESO team. Whether you're about to launch your first store or
-            already selling on Amazon, Flipkart, Meesho or Myntra — walk out with a clear, practical plan to grow.
-          </p>
-
-          <ul class="hero__points">
-            <li><span class="tick" aria-hidden="true"></span>Live strategy walkthrough with experts</li>
-            <li><span class="tick" aria-hidden="true"></span>Open Q&amp;A for your own store</li>
-            <li><span class="tick" aria-hidden="true"></span>Join link sent on WhatsApp &amp; email</li>
-          </ul>
-
-          <div class="hero__stats">
-            <div><strong>Live</strong><span>Group session</span></div>
-            <div><strong>4</strong><span>Marketplaces</span></div>
-            <div><strong>3</strong><span>Languages</span></div>
-          </div>
+      <div class="container hero__head">
+        <p class="pill"><span class="pill__dot" aria-hidden="true"></span>Live group meeting · For e-commerce sellers</p>
+        <h1>Stop selling on guesswork.<br /><span class="accent">Grow with a plan</span> from ESO.</h1>
+        <p class="hero__lead">
+          One focused group session with the ESO team. Whether you're about to launch your first store or already
+          selling on Amazon, Flipkart, Meesho or Myntra — walk out with a clear, practical plan to grow.
+        </p>
+        <div class="hero__actions">
+          <a href="#book" class="btn btn--primary btn--lg">Book your seat <span aria-hidden="true">→</span></a>
+          <a href="#how" class="btn btn--ghost btn--lg">See how it works</a>
         </div>
+      </div>
 
-        <!-- Booking form -->
-        <div class="form-card" id="book">
-          <div class="form-card__head">
-            <p class="eyebrow">Reserve your seat</p>
-            <h2>Book the group meeting</h2>
-            <p class="form-card__price">
-              <span class="mono">Registration fee</span>
-              <strong id="feeLabel">₹ —</strong>
-            </p>
+      <!-- The booking console: what the session gives you, and the form -->
+      <div class="container">
+        <div class="console" id="book">
+          <div class="console__bar" aria-hidden="true">
+            <span></span><span></span><span></span>
+            <p class="mono">ESO Wolf · Group meeting</p>
           </div>
 
-          <form id="bookingForm" novalidate>
-            <div class="field">
-              <label for="name">Name</label>
-              <input id="name" name="name" type="text" autocomplete="name" placeholder="Your full name" required />
-              <p class="field__error" data-for="name"></p>
-            </div>
-
-            <div class="field">
-              <label for="phone">Phone number</label>
-              <div class="phone">
-                <span class="phone__code">+91</span>
-                <input id="phone" name="phone" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="10" placeholder="98765 43210" required />
+          <div class="console__body">
+            <div class="console__info">
+              <div class="tile tile--wide">
+                <p class="tile__label mono"><span class="tile__dot"></span>Registration fee</p>
+                <p class="tile__value">Free</p>
+                <p class="tile__hint">Just your details — no payment. Your seat is booked at once.</p>
               </div>
-              <p class="field__error" data-for="phone"></p>
-            </div>
-
-            <div class="field">
-              <label for="email">Mail ID</label>
-              <input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required />
-              <p class="field__error" data-for="email"></p>
-            </div>
-
-            <div class="field">
-              <label for="sellerType">Seller type</label>
-              <div class="select">
-                <select id="sellerType" name="sellerType" required>
-                  <option value="" selected disabled>Select seller type</option>
-                  <option value="existing">Existing seller</option>
-                  <option value="new">New seller</option>
-                </select>
+              <div class="tile">
+                <p class="tile__label mono">Format</p>
+                <p class="tile__value tile__value--sm">Live</p>
+                <p class="tile__hint">Group session</p>
               </div>
-              <p class="field__error" data-for="sellerType"></p>
+              <div class="tile">
+                <p class="tile__label mono">Languages</p>
+                <p class="tile__value tile__value--sm">3</p>
+                <p class="tile__hint">English · Tamil · Hindi</p>
+              </div>
+              <div class="tile">
+                <p class="tile__label mono">Marketplaces</p>
+                <p class="tile__value tile__value--sm">4</p>
+                <p class="tile__hint">Amazon · Flipkart · Meesho · Myntra</p>
+              </div>
+              <div class="tile">
+                <p class="tile__label mono">Join link</p>
+                <p class="tile__value tile__value--sm">WhatsApp</p>
+                <p class="tile__hint">and email, after you book</p>
+              </div>
+              <ul class="console__list">
+                <li><span class="tick" aria-hidden="true"></span>Live strategy walkthrough with experts</li>
+                <li><span class="tick" aria-hidden="true"></span>Open Q&amp;A for your own store</li>
+                <li><span class="tick" aria-hidden="true"></span>A clear next step, new seller or existing</li>
+              </ul>
             </div>
 
-            <button type="submit" class="btn btn--primary btn--block btn--lg" id="payBtn">
-              Pay Now <span class="pay-amount">₹ —</span>
-            </button>
-            <p class="form-alert" id="formAlert" role="alert" hidden></p>
-            <p class="form-card__note">🔒 Secure payment by Razorpay · UPI, cards &amp; net banking</p>
-          </form>
+            <!-- Booking form -->
+            <div class="form-card">
+              <div class="form-card__head">
+                <p class="eyebrow">Reserve your seat</p>
+                <h2>Book the group meeting</h2>
+              </div>
+
+              <form id="bookingForm" novalidate>
+                <div class="field">
+                  <label for="name">Name</label>
+                  <input id="name" name="name" type="text" autocomplete="name" placeholder="Your full name" required />
+                  <p class="field__error" data-for="name"></p>
+                </div>
+
+                <div class="field">
+                  <label for="phone">Phone number</label>
+                  <div class="phone">
+                    <span class="phone__code">+91</span>
+                    <input id="phone" name="phone" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="10" placeholder="98765 43210" required />
+                  </div>
+                  <p class="field__error" data-for="phone"></p>
+                </div>
+
+                <div class="field">
+                  <label for="email">Mail ID</label>
+                  <input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required />
+                  <p class="field__error" data-for="email"></p>
+                </div>
+
+                <div class="field">
+                  <label for="sellerType">Seller type</label>
+                  <div class="select">
+                    <select id="sellerType" name="sellerType" required>
+                      <option value="" selected disabled>Select seller type</option>
+                      <option value="existing">Existing seller</option>
+                      <option value="new">New seller</option>
+                    </select>
+                  </div>
+                  <p class="field__error" data-for="sellerType"></p>
+                </div>
+
+                <!-- People never see this; a bot that fills it in is not booked. -->
+                <div class="field field--trap" aria-hidden="true">
+                  <label for="website">Website</label>
+                  <input id="website" name="website" type="text" tabindex="-1" autocomplete="off" />
+                </div>
+
+                <button type="submit" class="btn btn--primary btn--block btn--lg" id="payBtn">Book Now</button>
+                <p class="form-alert" id="formAlert" role="alert" hidden></p>
+                <p class="form-card__note">No registration fee · Join link on WhatsApp &amp; email</p>
+              </form>
+            </div>
+          </div>
         </div>
+      </div>
+
+      <div class="container">
+        <ul class="trust">
+          <li><span class="trust__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"/></svg></span>No registration fee</li>
+          <li><span class="trust__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.8 7L4 20l1-5A8 8 0 1 1 21 12z"/></svg></span>Join link on WhatsApp &amp; email</li>
+          <li><span class="trust__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 8h14M5 12h10M5 16h7"/></svg></span>English, Tamil &amp; Hindi</li>
+        </ul>
       </div>
     </section>
 
-    <!-- ================= ABOUT ================= -->
+    <!-- ================= WHERE SALES LEAK ================= -->
     <section class="section" id="about">
-      <div class="container about">
-        <div class="about__visual" aria-hidden="true">
-          <div class="mock-card">
-            <p class="mono mock-card__eyebrow">Group meeting · Tamil · Wed 7 PM</p>
-            <p class="mock-card__title">60-Day Growth Sprint</p>
-            <p class="mock-card__amount">₹2,95,000</p>
-            <div class="mock-card__timer mono">23 : 51 : 04</div>
-            <p class="mono mock-card__foot">Offer expires</p>
-          </div>
-          <div class="about__badge">
-            <strong>1 session</strong>
-            <span>to a clear growth plan</span>
-          </div>
-        </div>
-
-        <div class="about__copy">
-          <p class="eyebrow">About ESO Closer</p>
-          <h2>Built for sellers who want results, not just advice.</h2>
+      <div class="container split">
+        <div class="split__copy">
+          <p class="eyebrow">About ESO Wolf</p>
+          <h2>Where your store<br /><span class="accent">loses sales</span></h2>
           <p>
-            ESO Closer is the sales-closing toolkit behind ESO's seller growth programmes. Our group meetings bring
-            sellers together with the team that runs real marketplace accounts every day — so the guidance you get
-            is tested, current and practical.
+            Orders look fine on the dashboard. Growth tells a different story. ESO Wolf's group meetings bring
+            sellers together with the team that runs real marketplace accounts every day — so the guidance is
+            tested, current and practical.
           </p>
-          <p>
-            New to selling? We'll show you how to launch the right way. Already selling? We'll find where your
-            store is leaking sales and how to fix it — in one session, with your questions answered live.
-          </p>
-
-          <div class="about__grid">
-            <div>
-              <span class="about__icon">🎯</span>
-              <h3>Focused</h3>
-              <p>One topic, one plan, zero fluff.</p>
-            </div>
-            <div>
-              <span class="about__icon">🗣️</span>
-              <h3>Your language</h3>
-              <p>Sessions in English, Tamil &amp; Hindi.</p>
-            </div>
-            <div>
-              <span class="about__icon">🤝</span>
-              <h3>Ongoing support</h3>
-              <p>Community &amp; follow-ups after the call.</p>
-            </div>
-          </div>
         </div>
-      </div>
-    </section>
-
-    <!-- ================= SERVICES ================= -->
-    <section class="section section--tint" id="services">
-      <div class="container">
-        <div class="section__head">
-          <p class="eyebrow">Services</p>
-          <h2>Everything a seller needs to grow</h2>
-          <p>The group meeting is your starting point. Here's what the ESO team can help you with after it.</p>
-        </div>
-
-        <div class="services">
-          <article class="service">
-            <div class="service__num mono">01</div>
-            <h3>Group Strategy Meetings</h3>
-            <p>Live weekly sessions on listings, pricing, ads and growth — with open Q&amp;A for your store.</p>
+        <div class="leaks">
+          <article class="leak">
+            <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15l4-4 3 3 5-6"/></svg></span>
+            <h3>Listings that don't convert</h3>
+            <p>Titles, images and keywords that bring views but not orders.</p>
           </article>
-          <article class="service">
-            <div class="service__num mono">02</div>
-            <h3>New Seller Onboarding</h3>
-            <p>GST, account setup, catalogue and first listings — launch on the right marketplace the right way.</p>
+          <article class="leak">
+            <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v18M17 7H9.5a3 3 0 0 0 0 6h5a3 3 0 0 1 0 6H6"/></svg></span>
+            <h3>Ads burning money</h3>
+            <p>Campaigns that spend every day without paying back.</p>
           </article>
-          <article class="service">
-            <div class="service__num mono">03</div>
-            <h3>Account Growth Audit</h3>
-            <p>For existing sellers: we find where you're losing sales and give you a step-by-step fix list.</p>
+          <article class="leak">
+            <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 12l-8 8-8-8 8-8h8v8z"/><circle cx="15.5" cy="8.5" r="1.2"/></svg></span>
+            <h3>Pricing by guesswork</h3>
+            <p>Prices set by feel, not by what the market and your margin allow.</p>
           </article>
-          <article class="service">
-            <div class="service__num mono">04</div>
-            <h3>Ads &amp; Listing Optimisation</h3>
-            <p>Sharper titles, images and keywords, plus ad campaigns that spend less and sell more.</p>
-          </article>
-          <article class="service">
-            <div class="service__num mono">05</div>
-            <h3>Account Management</h3>
-            <p>Hand over day-to-day operations to a dedicated team while you focus on your products.</p>
-          </article>
-          <article class="service">
-            <div class="service__num mono">06</div>
-            <h3>1:1 Consultations</h3>
-            <p>Book a private call with an ESO expert for a deep dive into your business.</p>
+          <article class="leak">
+            <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v5M12 16h.01"/></svg></span>
+            <h3>No clear next step</h3>
+            <p>New or growing — not knowing what to fix first costs the most.</p>
           </article>
         </div>
       </div>
     </section>
 
-    <!-- ================= HOW IT WORKS ================= -->
-    <section class="section">
-      <div class="container">
-        <div class="section__head">
+    <!-- ================= METHOD ================= -->
+    <section class="section section--alt" id="how">
+      <div class="container split">
+        <div class="split__copy">
           <p class="eyebrow">How it works</p>
-          <h2>Three steps to your seat</h2>
+          <h2>The ESO Wolf way. <span class="muted">Five steps from booking to a plan.</span></h2>
+          <p>Book in a minute — no payment — and the join link comes to you. The rest happens live, with your questions answered.</p>
         </div>
-        <ol class="steps">
+        <ol class="timeline">
           <li>
-            <span class="steps__n">1</span>
-            <h3>Fill the form</h3>
-            <p>Your name, phone number, mail ID and whether you're a new or existing seller.</p>
+            <span class="timeline__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span>
+            <div><h3>Fill your details</h3><p>Your name, phone number, mail ID and whether you're a new or existing seller.</p></div>
           </li>
           <li>
-            <span class="steps__n">2</span>
-            <h3>Pay securely</h3>
-            <p>Complete the registration fee online — UPI, cards and net banking accepted.</p>
+            <span class="timeline__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"/></svg></span>
+            <div><h3>Seat booked</h3><p>Press Book Now and your seat is booked at once — no registration fee.</p></div>
           </li>
           <li>
-            <span class="steps__n">3</span>
-            <h3>Join the meeting</h3>
-            <p>Get your join link and reminders on WhatsApp and email. Just show up and learn.</p>
+            <span class="timeline__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.8 7L4 20l1-5A8 8 0 1 1 21 12z"/></svg></span>
+            <div><h3>Get your join link</h3><p>On WhatsApp and email, with reminders before the session.</p></div>
+          </li>
+          <li>
+            <span class="timeline__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></span>
+            <div><h3>Join live &amp; ask</h3><p>A strategy walkthrough with the ESO team, and open Q&amp;A for your store.</p></div>
+          </li>
+          <li>
+            <span class="timeline__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 17l6-6 4 4 6-8"/><path d="M14 7h6v6"/></svg></span>
+            <div><h3>Leave with a plan</h3><p>A clear, practical next step — and the community and follow-ups after the call.</p></div>
           </li>
         </ol>
       </div>
     </section>
 
-    <!-- ================= CTA BAND ================= -->
-    <section class="cta">
-      <div class="container cta__inner">
-        <div>
-          <h2>Seats are limited for every session.</h2>
-          <p>Book now and get the join link straight to your WhatsApp.</p>
+    <!-- ================= INSIDE THE SESSION ================= -->
+    <section class="section">
+      <div class="container">
+        <div class="section__head section__head--center">
+          <p class="pill"><span class="pill__dot" aria-hidden="true"></span>Inside the group meeting</p>
+          <h2>Your store gets a <span class="accent">game plan</span></h2>
+          <p>One session covers what moves sales on every marketplace — and leaves room for your own questions.</p>
         </div>
-        <a href="#book" class="btn btn--primary btn--lg">Book Now</a>
+
+        <div class="orbit" aria-hidden="true">
+          <div class="orbit__rings"></div>
+          <div class="orbit__core"><img src="assets/eso-wolf-icon.png" alt="" /></div>
+          <span class="chip chip--a">Listings</span>
+          <span class="chip chip--b">Pricing</span>
+          <span class="chip chip--c">Ads</span>
+          <span class="chip chip--d">Catalogue</span>
+          <span class="chip chip--e">Account health</span>
+          <span class="chip chip--f">Growth plan</span>
+        </div>
+
+        <div class="features">
+          <div class="feature"><h3><span class="feature__mark" aria-hidden="true"></span>Live strategy walkthrough</h3><p>Experts take you through what works on the marketplaces right now.</p></div>
+          <div class="feature"><h3><span class="feature__mark" aria-hidden="true"></span>Open Q&amp;A</h3><p>Bring your own store's questions and get them answered live.</p></div>
+          <div class="feature"><h3><span class="feature__mark" aria-hidden="true"></span>Your language</h3><p>Sessions in English, Tamil and Hindi.</p></div>
+          <div class="feature"><h3><span class="feature__mark" aria-hidden="true"></span>Focused</h3><p>One topic, one plan, zero fluff.</p></div>
+          <div class="feature"><h3><span class="feature__mark" aria-hidden="true"></span>New or existing sellers</h3><p>Launch the right way, or find where your store is leaking sales.</p></div>
+          <div class="feature"><h3><span class="feature__mark" aria-hidden="true"></span>Ongoing support</h3><p>Community and follow-ups after the call.</p></div>
+        </div>
+
+        <div class="askbar">
+          <div>
+            <p class="askbar__title"><span class="feature__mark" aria-hidden="true"></span>Bring your questions</p>
+            <p class="askbar__text">Your listings, ads, pricing or launch — the session is built around what sellers ask.</p>
+          </div>
+          <a href="#book" class="btn btn--primary">Book your seat <span aria-hidden="true">→</span></a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SERVICES (bento) ================= -->
+    <section class="section section--alt" id="services">
+      <div class="container">
+        <div class="section__head">
+          <p class="eyebrow">Services</p>
+          <h2>Every service aimed at <span class="accent">one target: growth</span></h2>
+          <p>The group meeting is your starting point. Here's what the ESO team can help you with after it.</p>
+        </div>
+
+        <div class="bento">
+          <article class="card card--hot bento__a">
+            <p class="card__label mono">01 · Group Strategy Meetings</p>
+            <h3>Live weekly sessions on listings, pricing, ads and growth.</h3>
+            <ul class="checks checks--dark">
+              <li>Open Q&amp;A for your store</li>
+              <li>English, Tamil &amp; Hindi</li>
+              <li>Join link on WhatsApp &amp; email</li>
+            </ul>
+          </article>
+          <article class="card bento__b">
+            <p class="card__label mono">02 · New Seller Onboarding</p>
+            <h3>Launch on the right marketplace, the right way.</h3>
+            <ul class="checks"><li>GST &amp; account setup</li><li>Catalogue &amp; first listings</li></ul>
+          </article>
+          <article class="card bento__c">
+            <p class="card__label mono">03 · Account Growth Audit</p>
+            <h3>Find where you're losing sales.</h3>
+            <ul class="checks"><li>For existing sellers</li><li>A step-by-step fix list</li></ul>
+          </article>
+          <article class="card bento__d">
+            <p class="card__label mono">04 · Ads &amp; Listing Optimisation</p>
+            <h3>Spend less on ads, sell more from every listing.</h3>
+            <ul class="checks checks--2"><li>Sharper titles &amp; images</li><li>Keywords that rank</li><li>Leaner ad campaigns</li><li>More orders per rupee</li></ul>
+          </article>
+          <article class="card bento__e">
+            <p class="card__label mono">05 · Account Management</p>
+            <h3>Hand over day-to-day operations.</h3>
+            <ul class="checks"><li>A dedicated team</li><li>You focus on products</li></ul>
+          </article>
+          <article class="card bento__f">
+            <p class="card__label mono">06 · 1:1 Consultations</p>
+            <h3>A private deep dive with an ESO expert.</h3>
+            <ul class="checks"><li>Your business, one on one</li></ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= MARKETPLACES ================= -->
+    <section class="section section--tight">
+      <div class="container markets">
+        <h2>One meeting.<br /><span class="accent">Four marketplaces</span><br />of growth.</h2>
+        <ul class="markets__list">
+          <li><span class="markets__dot" aria-hidden="true"></span>Amazon</li>
+          <li><span class="markets__dot" aria-hidden="true"></span>Flipkart</li>
+          <li><span class="markets__dot" aria-hidden="true"></span>Meesho</li>
+          <li><span class="markets__dot" aria-hidden="true"></span>Myntra</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ================= COMPARISON ================= -->
+    <section class="section">
+      <div class="container">
+        <div class="section__head section__head--center">
+          <h2>Same store. <span class="accent">A clearer plan.</span></h2>
+          <p>What changes when you stop figuring it out alone.</p>
+        </div>
+        <div class="compare" role="table" aria-label="Figuring it out alone compared with ESO Wolf">
+          <div class="compare__row compare__row--head" role="row">
+            <span role="columnheader"></span>
+            <span role="columnheader">Figuring it out alone</span>
+            <span role="columnheader" class="compare__us">With ESO Wolf</span>
+          </div>
+          <div class="compare__row" role="row">
+            <span role="rowheader">Strategy</span>
+            <span role="cell">Trial and error, one month at a time</span>
+            <span role="cell" class="compare__us">A clear plan from people who run real accounts</span>
+          </div>
+          <div class="compare__row" role="row">
+            <span role="rowheader">Listings</span>
+            <span role="cell">Copied from competitors</span>
+            <span role="cell" class="compare__us">Titles, images and keywords that convert</span>
+          </div>
+          <div class="compare__row" role="row">
+            <span role="rowheader">Ads</span>
+            <span role="cell">Budget spent, results unclear</span>
+            <span role="cell" class="compare__us">Campaigns that spend less and sell more</span>
+          </div>
+          <div class="compare__row" role="row">
+            <span role="rowheader">Your questions</span>
+            <span role="cell">Searched on forums and videos</span>
+            <span role="cell" class="compare__us">Answered live, for your store</span>
+          </div>
+          <div class="compare__row" role="row">
+            <span role="rowheader">After the call</span>
+            <span role="cell">On your own again</span>
+            <span role="cell" class="compare__us">Community and follow-ups</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= PRICING ================= -->
+    <section class="section section--alt" id="pricing">
+      <div class="container pricing">
+        <div class="split__copy">
+          <p class="pill pill--quiet">Registration</p>
+          <h2>No fee. <span class="accent">Just your details.</span></h2>
+          <p>There is no registration fee for the group meeting. Fill in your details and your seat is booked; your join link follows on WhatsApp and email.</p>
+        </div>
+        <article class="price">
+          <span class="price__tag mono">Group meeting</span>
+          <h3>Your seat</h3>
+          <p class="price__amount">Free</p>
+          <p class="price__sub">No registration fee · one live session</p>
+          <a href="#book" class="btn btn--primary btn--block">Book your seat</a>
+          <ul class="checks">
+            <li>Live strategy walkthrough</li>
+            <li>Open Q&amp;A for your store</li>
+            <li>English, Tamil &amp; Hindi</li>
+            <li>Join link on WhatsApp &amp; email</li>
+            <li>Booked at once — no payment</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <!-- ================= FAQ ================= -->
+    <section class="section" id="faq">
+      <div class="container faq">
+        <h2 class="faq__title">Straight answers <span class="accent">before you book</span></h2>
+        <details>
+          <summary>Who is the group meeting for?</summary>
+          <p>E-commerce sellers — whether you're about to launch your first store or already selling and want to grow.</p>
+        </details>
+        <details>
+          <summary>Which marketplaces does it cover?</summary>
+          <p>Amazon, Flipkart, Meesho and Myntra.</p>
+        </details>
+        <details>
+          <summary>Which language is the session in?</summary>
+          <p>Sessions run in English, Tamil and Hindi.</p>
+        </details>
+        <details>
+          <summary>How do I get the join link?</summary>
+          <p>Once you book, the join link is sent to you on WhatsApp and email.</p>
+        </details>
+        <details>
+          <summary>Is there a registration fee?</summary>
+          <p>No. Fill in your name, phone number, mail ID and seller type, press Book Now, and your seat is booked.</p>
+        </details>
+      </div>
+    </section>
+
+    <!-- ================= CTA BAND ================= -->
+    <section class="section section--tight">
+      <div class="container">
+        <div class="cta">
+          <div>
+            <h2>Your competitors are guessing.<br />You'll have a plan.</h2>
+            <p>Seats are limited for every session. Book now and get the join link straight to your WhatsApp.</p>
+          </div>
+          <a href="#book" class="btn btn--dark btn--lg">Book Now <span aria-hidden="true">→</span></a>
+        </div>
       </div>
     </section>
   </main>
@@ -252,8 +443,8 @@
   <footer class="footer">
     <div class="container footer__grid">
       <div class="footer__brand">
-        <img src="assets/eso-closer.png" alt="ESO Closer" />
-        <p>Sales closing toolkit. Helping e-commerce sellers close the gap between interested and paid.</p>
+        <img src="assets/eso-wolf.png" alt="ESO Wolf" />
+        <p>Helping e-commerce sellers close the gap between interested and paid.</p>
       </div>
 
       <div>
@@ -261,7 +452,7 @@
         <ul>
           <li><a href="#home">Home</a></li>
           <li><a href="#about">About</a></li>
-          <li><a href="#services">Services</a></li>
+          <li><a href="#how">How it works</a></li>
           <li><a href="#book">Book Now</a></li>
         </ul>
       </div>
@@ -279,16 +470,17 @@
       <div>
         <h4>Contact</h4>
         <ul>
-          <li><a href="https://closer.esowolf.in/" target="_blank" rel="noopener">closer.esowolf.in</a></li>
           <li><a href="#book">Book a seat</a></li>
         </ul>
       </div>
     </div>
 
     <div class="container footer__bottom">
-      <p>© <span id="year"></span> ESO Closer. All rights reserved.</p>
+      <p>© <span id="year"></span> ESO Wolf. All rights reserved.</p>
       <p><a href="#">Privacy Policy</a> · <a href="#">Terms of Service</a></p>
     </div>
+
+    <p class="wordmark" aria-hidden="true">ESO WOLF</p>
   </footer>
 
   <!-- ================= PAYMENT MODAL ================= -->
@@ -296,14 +488,13 @@
     <div class="modal__backdrop" data-close></div>
     <div class="modal__card">
       <div class="modal__check" aria-hidden="true">✓</div>
-      <h3 id="modalTitle">Payment successful!</h3>
+      <h3 id="modalTitle">Seat booked!</h3>
       <p class="modal__text" id="modalText">Your seat for the group meeting is booked. We'll send the join link on WhatsApp and email.</p>
       <dl class="modal__summary" id="modalSummary"></dl>
       <button class="btn btn--primary btn--block" data-close>Done</button>
     </div>
   </div>
 
-  <script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
   <script src="script.js"></script>
 </body>
 </html>

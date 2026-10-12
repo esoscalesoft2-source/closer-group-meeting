@@ -563,8 +563,8 @@ function renderRegistrations(list) {
   const body = $('regBody')
   if (!list.length) {
     const tr = document.createElement('tr')
-    const td = cell(rangeText() ? 'No paid registrations in this date range.' : 'No paid registrations yet.', 'empty')
-    td.colSpan = 7
+    const td = cell(rangeText() ? 'No registrations in this date range.' : 'No registrations yet.', 'empty')
+    td.colSpan = 8
     tr.append(td)
     body.replaceChildren(tr)
   } else {
@@ -572,13 +572,16 @@ function renderRegistrations(list) {
       ...list.map((r) => {
         const tr = document.createElement('tr')
         tr.append(
-          cell(dateTime(r.paidAt)),
+          cell(dateTime(r.bookedAt || r.paidAt)),
           cell(r.name),
           cell(r.phone),
           cell(r.email),
           cell(r.sellerType),
-          cell(r.amountPaise != null ? rupees(r.amountPaise / 100) : null),
-          cell(r.paymentId, 'mono'),
+          // A free booking (Book Now) has no payment: it says so.
+          cell(r.source === 'free' ? 'Free' : r.amountPaise != null ? rupees(r.amountPaise / 100) : null),
+          cell(r.paymentId || r.id, 'mono'),
+          // A website booking handed to Closer's group class, or why not.
+          cell(r.closer ? (r.closer.ok ? `In ${r.closer.className || 'group class'}` : `Not sent: ${r.closer.error}`) : null),
         )
         return tr
       }),

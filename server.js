@@ -24,6 +24,12 @@ const ORDER_PURPOSE = 'Group meeting registration'
 const DEFAULT_FEE = Number(process.env.REGISTRATION_FEE) || 999
 const BUSINESS_NAME = process.env.BUSINESS_NAME || 'ESO Closer'
 // First login only. Once changed on /admin, data/admin.json (hashed) wins.
+// Closer, where a booking becomes a client in the group class that takes
+// website bookings — and so gets its WhatsApp reminders with each class's
+// Teams link. Both empty: bookings stay on this site only.
+const CLOSER_API_URL = (process.env.CLOSER_API_URL || '').replace(/\/+$/, '')
+const CLOSER_API_KEY = process.env.CLOSER_API_KEY || ''
+
 const ENV_ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin'
 const ENV_ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || ''
 
@@ -203,6 +209,94 @@ function saveRegistration(entry) {
   fs.writeFileSync(`${REG_FILE}.tmp`, JSON.stringify(all, null, 2))
   fs.renameSync(`${REG_FILE}.tmp`, REG_FILE)
   return result
+}
+
+// A free booking — the landing page's Book Now, no payment. One seat per phone
+// number: booking again with the same number returns the seat already held
+// rather than a second row. Returns { entry, existing }.
+function saveFreeBooking(booking) {
+  fs.mkdirSync(DATA_DIR, { recursive: true })
+  const all = readRegistrations()
+  const held = all.find((r) => r.source === 'free' && r.phone === booking.phone)
+  if (held) return { entry: held, existing: true }
+  const entry = {
+    id: `GM-${crypto.randomBytes(4).toString('hex').toUpperCase()}`,
+    name: booking.name,
+    phone: booking.phone,
+    email: booking.email,
+    sellerType: SELLER_TYPES[booking.sellerType],
+    amountPaise: 0,
+    bookedAt: new Date().toISOString(),
+    source: 'free',
+  }
+  all.push(entry)
+  fs.writeFileSync(`${REG_FILE}.tmp`, JSON.stringify(all, null, 2))
+  fs.renameSync(`${REG_FILE}.tmp`, REG_FILE)
+  return { entry, existing: false }
+}
+
+// Fill in fields on a saved registration, by its booking id.
+function updateRegistration(id, patch) {
+  const all = readRegistrations()
+  const row = all.find((r) => r.id === id)
+  if (!row) return
+  Object.assign(row, patch)
+  fs.writeFileSync(`${REG_FILE}.tmp`, JSON.stringify(all, null, 2))
+  fs.renameSync(`${REG_FILE}.tmp`, REG_FILE)
+}
+
+/**
+ * Hand a booking to Closer (its integrations API, with the workspace's API
+ * key): the person becomes a client in the group class that takes website
+ * bookings. The outcome is kept on the registration as `closer`, so one that
+ * failed is sent again when the same number books again. Never throws.
+ */
+async function sendToCloser(entry) {
+  if (!CLOSER_API_URL || !CLOSER_API_KEY) return
+  let closer
+  try {
+    const res = await fetch(`${CLOSER_API_URL}/api/integrations/v1/group-class/registrations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${CLOSER_API_KEY}` },
+      body: JSON.stringify({ name: entry.name, phone: entry.phone, email: entry.email, sellerType: entry.sellerType }),
+      signal: AbortSignal.timeout(15_000),
+    })
+    const json = await res.json().catch(() => ({}))
+    closer = res.ok
+      ? { ok: true, clientId: json.data?.clientId ?? null, className: json.data?.className ?? null, at: new Date().toISOString() }
+      : { ok: false, error: closerErrorMessage(res.status, json), at: new Date().toISOString() }
+  } catch (e) {
+    const error =
+      e.name === 'TimeoutError'
+        ? 'Closer did not answer within 15 seconds'
+        : `Could not reach Closer (${e.cause?.code || e.message})`
+    closer = { ok: false, error, at: new Date().toISOString() }
+  }
+  // This runs after the visitor has their answer, with nobody awaiting it: an error
+  // escaping here would be an unhandled rejection, which stops the whole server.
+  try {
+    updateRegistration(entry.id, { closer })
+  } catch (e) {
+    console.error(`✖ Could not save the Closer result on ${entry.id}:`, e.message)
+  }
+  if (closer.ok) console.log(`→ Closer: ${entry.name} is in ${closer.className}`)
+  else console.error(`✖ Closer did not take ${entry.id}: ${closer.error}`)
+}
+
+// Closer's own message where it sent one (its envelope: { error: { code, message } }),
+// with the status in front so the admin column says what kind of failure it was.
+function closerErrorMessage(status, json) {
+  const message = json?.error?.message
+  const kind =
+    status === 400 || status === 422
+      ? 'Closer refused the details'
+      : status === 401 || status === 403
+        ? 'Closer rejected the API key'
+        : status === 409
+          ? 'No group class in Closer takes website bookings'
+          : `Closer answered ${status}`
+  if (status === 409) return message || kind // Closer's 409 message already says what to switch on
+  return message && status !== 401 && status !== 403 ? `${kind}: ${message}` : kind
 }
 
 /* ---------------- settings (the fee) ---------------- */
@@ -960,7 +1054,8 @@ function dateRangeFrom(req) {
   const end = to ? endDay + 86_400_000 : Infinity // exclusive: start of the day after "to"
   if (start >= end) return { error: '"From" date must be on or before the "To" date.' }
   const filter = (r) => {
-    const t = Date.parse(r.paidAt)
+    // A free booking has its booking time; a paid one, its payment time.
+    const t = Date.parse(r.bookedAt || r.paidAt)
     return t >= start && t < end
   }
   return { from, to, filter }
@@ -972,25 +1067,25 @@ function handleAdminRegistrationsXlsx(req, res) {
   const list = readRegistrations().filter(range.filter) // oldest first, so S.No runs in payment order
   const columns = [
     { header: 'S.No', width: 7, type: 'number' },
-    { header: 'Paid on (IST)', width: 22, type: 'date' },
+    { header: 'Booked on (IST)', width: 22, type: 'date' },
     { header: 'Name', width: 24, type: 'text' },
     { header: 'Phone', width: 16, type: 'text' },
     { header: 'Mail ID', width: 30, type: 'text' },
     { header: 'Seller type', width: 16, type: 'text' },
     { header: 'Amount (₹)', width: 13, type: 'money', total: true },
-    { header: 'Payment ID', width: 22, type: 'text' },
+    { header: 'Booking / Payment ID', width: 22, type: 'text' },
     { header: 'Order ID', width: 24, type: 'text' },
   ]
   const rows = list.map((r, i) => [
     i + 1,
-    r.paidAt,
+    r.bookedAt || r.paidAt,
     r.name,
     r.phone,
     r.email,
     r.sellerType,
     r.amountPaise != null ? r.amountPaise / 100 : null,
-    r.paymentId,
-    r.orderId,
+    r.paymentId || r.id || null,
+    r.orderId || null,
   ])
 
   const file = buildXlsx(columns, rows, {
@@ -1032,6 +1127,45 @@ function handleAdminRegistrations(req, res) {
 const pendingOrders = new Map()
 
 /* ---------------- API ---------------- */
+
+// Free bookings per address, so a script cannot fill the list: 10 an hour.
+const bookingAttempts = new Map() // ip → { count, resetAt }
+
+function bookingLimited(ip) {
+  const now = Date.now()
+  const a = bookingAttempts.get(ip)
+  const fresh = !a || a.resetAt <= now
+  const next = { count: fresh ? 1 : a.count + 1, resetAt: fresh ? now + 60 * 60 * 1000 : a.resetAt }
+  bookingAttempts.set(ip, next)
+  return next.count > 10
+}
+
+// Book Now: the details only — there is no registration fee. The same rules
+// as the form, checked again here.
+async function handleBook(req, res) {
+  if (!isJson(req)) return sendJson(res, 415, { error: 'Expected JSON.' })
+  let body
+  try {
+    body = await readBody(req)
+  } catch (e) {
+    return sendJson(res, 400, { error: e.message })
+  }
+  // A field people never see: filled in, it is a bot. Answer as if booked.
+  if (body.website) return sendJson(res, 200, { status: 'BOOKED', bookingId: null })
+
+  const { errors, booking } = validateBooking(body)
+  if (Object.keys(errors).length) return sendJson(res, 422, { error: 'Please fix the highlighted fields.', fields: errors })
+  if (bookingLimited(req.socket.remoteAddress)) {
+    return sendJson(res, 429, { error: 'Too many bookings from this connection. Please try again later.' })
+  }
+
+  const { entry, existing } = saveFreeBooking(booking)
+  if (!existing) console.log(`✔ Booked: ${entry.name} (${entry.phone}) — ${entry.id}`)
+  sendJson(res, 200, { status: 'BOOKED', bookingId: entry.id, alreadyBooked: existing })
+  // After the answer, so the visitor never waits on Closer. A booking Closer
+  // has not taken yet — new, or failed before — is sent.
+  if (!entry.closer?.ok) sendToCloser(entry).catch((e) => console.error('✖ Closer hand-off crashed:', e.message))
+}
 
 async function handleConfig(req, res) {
   sendJson(res, 200, { fee: currentFee(), currency: 'INR', paymentsEnabled: paymentsEnabled() })
@@ -1159,6 +1293,7 @@ http
 
     try {
       if (urlPath === '/api/config' && req.method === 'GET') return await handleConfig(req, res)
+      if (urlPath === '/api/book' && req.method === 'POST') return await handleBook(req, res)
       if (urlPath === '/api/create-order' && req.method === 'POST') return await handleCreateOrder(req, res)
       if (urlPath === '/api/verify-payment' && req.method === 'POST') return await handleVerify(req, res)
       if (urlPath === '/api/webhooks/razorpay' && req.method === 'POST') return await handleRazorpayWebhook(req, res)

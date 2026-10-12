@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex, nofollow" />
   <title>Group Meeting Admin</title>
-  <link rel="icon" href="assets/eso-closer.png" />
+  <link rel="icon" type="image/png" href="assets/favicon.png" />
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
@@ -137,8 +138,8 @@
 <body>
   <header class="nav admin-nav">
     <div class="container nav__inner">
-      <a href="/" class="nav__brand" aria-label="ESO Closer landing page">
-        <img src="assets/eso-closer.png" alt="ESO Closer" />
+      <a href="/" class="nav__brand" aria-label="ESO Wolf landing page">
+        <img src="assets/eso-wolf.png" alt="ESO Wolf" />
         <span class="tag">Admin</span>
       </a>
       <nav class="nav__links">
@@ -415,8 +416,8 @@
       <section class="panel">
         <div class="head-row">
           <div>
-            <p class="eyebrow">Payments</p>
-            <h2>Paid registrations</h2>
+            <p class="eyebrow">Bookings</p>
+            <h2>Registrations</h2>
           </div>
           <div class="btn-row" style="margin: 0">
             <button class="btn btn--ghost" id="refreshBtn" type="button">Refresh</button>
@@ -463,7 +464,7 @@
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Paid on</th><th>Name</th><th>Phone</th><th>Mail ID</th><th>Seller</th><th>Amount</th><th>Payment ID</th></tr>
+              <tr><th>Booked on</th><th>Name</th><th>Phone</th><th>Mail ID</th><th>Seller</th><th>Amount</th><th>Booking / Payment ID</th><th>Closer</th></tr>
             </thead>
             <tbody id="regBody"></tbody>
           </table>
