@@ -112,6 +112,11 @@
     .btn--excel:hover { background: #0f5c29; }
     .btn--excel:disabled { opacity: 0.45; cursor: not-allowed; }
     .head-row { flex-wrap: wrap; }
+    .sub-section { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); }
+    .sub-title { font-size: 1rem; margin: 0; }
+    .mono-input { font-family: var(--font-mono) !important; font-size: 12.5px !important; color: var(--muted) !important; flex: 1; min-width: 0; }
+    .steps-mini { margin: 4px 0 14px; padding-left: 20px; font-size: 13px; color: var(--muted); display: grid; gap: 4px; }
+    .steps-mini a { color: var(--orange-dark); text-decoration: underline; }
     .filter-bar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; margin-top: 16px; padding: 14px; border-radius: 12px; background: var(--surface-2); }
     .filter-field { display: grid; gap: 5px; flex: 1 1 140px; min-width: 0; }
     .filter-field label { font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
@@ -240,6 +245,48 @@
           <p class="form-alert" id="rzpAlert" role="alert" hidden></p>
           <p class="ok-msg" id="rzpOk" role="status" hidden></p>
         </form>
+
+        <div class="sub-section" id="webhookBox">
+          <div class="head-row">
+            <h3 class="sub-title">Webhook</h3>
+            <span class="chip" id="whChip">—</span>
+          </div>
+          <p class="hint" style="margin: 4px 0 14px">Razorpay tells this site directly when a payment succeeds, so a buyer who pays and closes the tab is still recorded.</p>
+
+          <div class="field">
+            <label for="whUrl">Webhook URL</label>
+            <div class="fee-row">
+              <input id="whUrl" readonly class="mono-input" />
+              <button class="btn btn--ghost" type="button" id="whCopyUrl">Copy</button>
+            </div>
+          </div>
+          <p class="warn-msg" id="whLocalNote" hidden>This is a localhost address, and Razorpay can't reach your computer. The webhook works once the site is live on a public https address (or set <b>PUBLIC_URL</b> in .env to that address).</p>
+
+          <form id="whForm" novalidate>
+            <div class="field">
+              <label for="whSecret">Webhook secret</label>
+              <div class="fee-row">
+                <div style="flex: 1; min-width: 0">
+                  <input id="whSecret" name="secret" type="password" autocomplete="new-password" spellcheck="false" placeholder="Same secret you type in Razorpay" />
+                </div>
+                <button class="btn btn--ghost" type="button" id="whGenerate">Generate</button>
+              </div>
+              <p class="field__error" data-for="secret"></p>
+            </div>
+            <ol class="steps-mini">
+              <li>Razorpay Dashboard → <b>Accounts &amp; Settings → Webhooks → Add New Webhook</b>. <a href="https://dashboard.razorpay.com/app/webhooks" target="_blank" rel="noopener">Open Webhooks ↗</a></li>
+              <li>Paste the <b>Webhook URL</b> above and the same <b>secret</b>.</li>
+              <li>Tick the events <b>payment.captured</b> and <b>order.paid</b>, then save there and here.</li>
+            </ol>
+            <div class="btn-row">
+              <button class="btn btn--primary" type="submit" id="whSaveBtn">Save secret</button>
+              <button class="btn btn--ghost" type="button" id="whRemoveBtn" hidden>Remove</button>
+            </div>
+            <p class="form-alert" id="whAlert" role="alert" hidden></p>
+            <p class="ok-msg" id="whOk" role="status" hidden></p>
+          </form>
+          <p class="meta" id="whLast"></p>
+        </div>
         </div>
       </section>
 

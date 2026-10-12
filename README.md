@@ -21,6 +21,7 @@ Built to match the look of [closer.esowolf.in](https://closer.esowolf.in/) (navy
 - The **server** decides the amount, never the browser
 - Every payment's signature is checked on the server before it counts as paid
 - Paid registrations are saved once per payment ID; double clicks and retries never save twice
+- **Razorpay webhook**: Razorpay tells the server directly when a payment succeeds, so a buyer who pays and closes the tab is still recorded
 
 **Admin page** (`/admin`, login required)
 
@@ -29,7 +30,7 @@ Four settings cards in an accordion:
 | Card | What it does |
 |---|---|
 | **Set the amount** | Registration fee in ₹. The landing page shows it and Razorpay charges it. |
-| **Razorpay keys** | Key ID + Key Secret. Checked with Razorpay before saving. Shows Test / Live mode. |
+| **Razorpay keys** | Key ID + Key Secret, checked with Razorpay before saving, with Test / Live mode shown. Also holds the **webhook** URL and secret, and when the last webhook arrived. |
 | **Email (SMTP)** | Gmail / Outlook / Zoho / custom. Checked before saving, plus a "Send test" button. |
 | **Change login** | New username and password, emailed to the mail ID you enter. |
 
@@ -71,9 +72,10 @@ npm start
 ### First-time setup in /admin
 
 1. **Razorpay keys**: paste the Key ID and Key Secret from Razorpay Dashboard → Account & Settings → API Keys. Start with `rzp_test_` keys and switch to `rzp_live_` when you're ready for real payments.
-2. **Email (SMTP)**: for Gmail, use `smtp.gmail.com`, port `587`, your Gmail address and a Google **App Password** (Google Account → Security → 2-Step Verification → App passwords). A normal Gmail password will not work. Press **Send test** to confirm.
-3. **Set the amount**: enter the registration fee and Save.
-4. **Change login**: replace the starting password from `.env` with your own.
+2. **Webhook** (in the same card, once the site is on a public https address): press **Generate**, then in Razorpay Dashboard → Accounts & Settings → Webhooks → Add New Webhook, paste the **Webhook URL** and the same secret and tick **payment.captured** and **order.paid**. Save in both places. The card shows "Receiving" once Razorpay's first webhook arrives.
+3. **Email (SMTP)**: for Gmail, use `smtp.gmail.com`, port `587`, your Gmail address and a Google **App Password** (Google Account → Security → 2-Step Verification → App passwords). A normal Gmail password will not work. Press **Send test** to confirm.
+4. **Set the amount**: enter the registration fee and Save.
+5. **Change login**: replace the starting password from `.env` with your own.
 
 ---
 
@@ -88,8 +90,9 @@ npm start
 | `REGISTRATION_FEE` | No | Starting fee in ₹ until one is saved on /admin (default `999`). |
 | `BUSINESS_NAME` | No | Shown on the Razorpay popup and in emails (default `ESO Closer`). |
 | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` | No | Fallback if no keys are saved on /admin. |
+| `RAZORPAY_WEBHOOK_SECRET` | No | Fallback if no webhook secret is saved on /admin. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | No | Fallback if no email settings are saved on /admin. |
-| `PUBLIC_URL` | No | Public address used in the login link in emails, e.g. `https://meet.example.com`. Defaults to the address the admin page was opened on. |
+| `PUBLIC_URL` | No | Public address of the site, e.g. `https://meet.example.com`. Used for the webhook URL shown on /admin and the login link in emails. Defaults to the address the admin page was opened on. |
 | `DATA_DIR` | No | Where data is stored (default `./data`). |
 
 Settings saved on /admin always win over `.env`.
@@ -107,6 +110,7 @@ Everything is stored as files in `data/`, which is **git-ignored**:
 | `admin.json` | Admin username + **scrypt-hashed** password |
 | `razorpay.json` | Key ID + **encrypted** Key Secret |
 | `smtp.json` | SMTP settings + **encrypted** password |
+| `webhook.json` | **Encrypted** webhook secret + when the last webhook arrived |
 | `secret.key` | Only created if `APP_SECRET` is not set |
 
 **Back up `data/` and `.env` together.** The encrypted values can only be read with the same `APP_SECRET`.
@@ -118,7 +122,8 @@ Forgot the admin password? Delete `data/admin.json` and the login from `.env` wo
 ## Security notes
 
 - The server sets the amount; the browser can't change what is charged
-- Every payment is confirmed by checking Razorpay's HMAC signature on the server
+- Every payment is confirmed by checking Razorpay's HMAC signature on the server, both from the browser and from the webhook (the webhook signature is checked over the raw request bytes)
+- Webhooks are account-wide, so only orders this page created (marked in the order notes) are recorded. Other payments on the same Razorpay account are skipped.
 - Admin sessions use an `HttpOnly`, `SameSite=Strict` cookie. Admin writes must be JSON.
 - 5 wrong logins (or wrong "current password" attempts) lock that IP out for 10 minutes
 - Changing the login signs out every other browser
@@ -131,7 +136,7 @@ Forgot the admin password? Delete `data/admin.json` and the login from `.env` wo
 - Admin sessions are kept in memory, so restarting the server signs everyone out
 - One admin account
 - Changing the login sends the new password by email, so use a mailbox only you can read
-- There's no Razorpay webhook yet. If a buyer closes the tab right after paying, the payment is in the Razorpay dashboard but may be missing from `registrations.json`.
+- Razorpay can't send webhooks to `localhost`. They start working once the site is on a public https address. Until then, a buyer who closes the tab right after paying may be missing from `registrations.json`, though the payment is still in the Razorpay dashboard.
 
 ---
 
@@ -163,6 +168,7 @@ Public:
 | `GET` | `/api/config` | Current fee and whether payments are on |
 | `POST` | `/api/create-order` | Checks the form and creates a Razorpay order |
 | `POST` | `/api/verify-payment` | Checks the payment signature and saves the registration |
+| `POST` | `/api/webhooks/razorpay` | Razorpay webhook (`payment.captured`, `order.paid`); signature-checked |
 
 Admin (login required):
 
@@ -171,6 +177,7 @@ Admin (login required):
 | `POST` | `/api/admin/login`, `/api/admin/logout` | Sign in / out |
 | `GET` `PUT` | `/api/admin/settings` | Fee |
 | `GET` `PUT` `DELETE` | `/api/admin/razorpay` | Razorpay keys |
+| `GET` `PUT` `DELETE` | `/api/admin/webhook` | Webhook secret, URL and last-received status |
 | `GET` `PUT` `DELETE` | `/api/admin/smtp` | Email settings |
 | `POST` | `/api/admin/smtp/test` | Send a test email |
 | `POST` | `/api/admin/credentials` | Change login and email it |

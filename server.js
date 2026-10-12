@@ -16,6 +16,10 @@ if (fs.existsSync(ENV_FILE)) process.loadEnvFile(ENV_FILE)
 const PORT = Number(process.env.PORT) || 3002
 // Fallback only. Keys saved on /admin (data/razorpay.json) win over these.
 const ENV_RZP = { keyId: process.env.RAZORPAY_KEY_ID || '', keySecret: process.env.RAZORPAY_KEY_SECRET || '' }
+const ENV_WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || ''
+// Stamped on every order this page creates. Razorpay webhooks are account-wide, so this is
+// how a webhook tells our orders apart from other payments on the same Razorpay account.
+const ORDER_PURPOSE = 'Group meeting registration'
 // Starting fee, used until an admin saves one on /admin.
 const DEFAULT_FEE = Number(process.env.REGISTRATION_FEE) || 999
 const BUSINESS_NAME = process.env.BUSINESS_NAME || 'ESO Closer'
@@ -38,6 +42,7 @@ const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json')
 const ADMIN_FILE = path.join(DATA_DIR, 'admin.json')
 const SMTP_FILE = path.join(DATA_DIR, 'smtp.json')
 const RZP_FILE = path.join(DATA_DIR, 'razorpay.json')
+const WEBHOOK_FILE = path.join(DATA_DIR, 'webhook.json')
 const KEY_FILE = path.join(DATA_DIR, 'secret.key')
 
 const MIN_FEE = 1
@@ -79,6 +84,24 @@ function readBody(req, limit = 10_000) {
         reject(new Error('Invalid JSON'))
       }
     })
+    req.on('error', reject)
+  })
+}
+
+// The exact bytes sent. Webhook signatures are over these bytes, so they must not be
+// parsed and re-serialised before checking.
+function readRawBody(req, limit = 1_000_000) {
+  return new Promise((resolve, reject) => {
+    const chunks = []
+    let size = 0
+    req.on('data', (chunk) => {
+      size += chunk.length
+      if (size > limit) {
+        reject(new Error('Body too large'))
+        req.destroy()
+      } else chunks.push(chunk)
+    })
+    req.on('end', () => resolve(Buffer.concat(chunks)))
     req.on('error', reject)
   })
 }
@@ -161,13 +184,25 @@ function readRegistrations() {
   }
 }
 
+// One row per payment id. The browser's confirmation and Razorpay's webhook can both
+// report the same payment, in either order: the first creates the row, a later one
+// only fills in fields that are still empty. Returns 'new' | 'updated' | 'duplicate'.
 function saveRegistration(entry) {
   fs.mkdirSync(DATA_DIR, { recursive: true })
   const all = readRegistrations()
-  // Idempotent by payment id: a double-click or retry never records twice.
-  if (all.some((r) => r.paymentId === entry.paymentId)) return
-  all.push(entry)
-  fs.writeFileSync(REG_FILE, JSON.stringify(all, null, 2))
+  const existing = all.find((r) => r.paymentId === entry.paymentId)
+  let result = 'new'
+  if (existing) {
+    const missing = Object.keys(entry).filter((k) => (existing[k] === null || existing[k] === undefined) && entry[k] != null)
+    if (!missing.length) return 'duplicate'
+    missing.forEach((k) => (existing[k] = entry[k]))
+    result = 'updated'
+  } else {
+    all.push(entry)
+  }
+  fs.writeFileSync(`${REG_FILE}.tmp`, JSON.stringify(all, null, 2))
+  fs.renameSync(`${REG_FILE}.tmp`, REG_FILE)
+  return result
 }
 
 /* ---------------- settings (the fee) ---------------- */
@@ -300,6 +335,188 @@ function handleAdminDeleteRazorpay(req, res) {
   } catch {}
   console.log('Razorpay keys removed')
   sendJson(res, 200, rzpPublicView())
+}
+
+/* ---------------- Razorpay webhook ---------------- */
+
+// The address this site is reached at: PUBLIC_URL if set, else the request's own host.
+function publicOrigin(req) {
+  if (process.env.PUBLIC_URL) return process.env.PUBLIC_URL.replace(/\/+$/, '')
+  const proto = req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http'
+  return `${proto}://${req.headers.host}`
+}
+
+const isLocalHost = (origin) => /^https?:\/\/(localhost|127\.|0\.0\.0\.0|\[::1\]|[^/]*\.localhost)(:|\/|$)/i.test(origin)
+
+// The webhook secret in force: saved on /admin (encrypted) if any, else .env.
+function webhookConfig() {
+  const saved = readJson(WEBHOOK_FILE) || {}
+  let secret = ''
+  let source = 'none'
+  if (saved.secretEnc) {
+    try {
+      secret = decryptSecret(saved.secretEnc)
+      source = 'admin'
+    } catch (e) {
+      console.error('Saved webhook secret could not be decrypted (APP_SECRET or secret.key changed?):', e.message)
+    }
+  } else if (ENV_WEBHOOK_SECRET) {
+    secret = ENV_WEBHOOK_SECRET
+    source = 'env'
+  }
+  return { secret, source, saved }
+}
+
+function webhookPublicView(req) {
+  const { secret, source, saved } = webhookConfig()
+  const url = `${publicOrigin(req)}/api/webhooks/razorpay`
+  return {
+    url,
+    urlIsLocal: isLocalHost(url),
+    hasSecret: Boolean(secret),
+    source,
+    updatedAt: saved.updatedAt || null,
+    lastEventAt: saved.lastEventAt || null,
+    lastEvent: saved.lastEvent || null,
+    lastResult: saved.lastResult || null,
+  }
+}
+
+function recordWebhookStatus(patch) {
+  writeJson(WEBHOOK_FILE, { ...(readJson(WEBHOOK_FILE) || {}), ...patch })
+}
+
+function handleAdminGetWebhook(req, res) {
+  sendJson(res, 200, webhookPublicView(req))
+}
+
+async function handleAdminSaveWebhook(req, res) {
+  if (!isJson(req)) return sendJson(res, 415, { error: 'Expected JSON.' })
+  let body
+  try {
+    body = await readBody(req)
+  } catch (e) {
+    return sendJson(res, 400, { error: e.message })
+  }
+  const secret = String(body.secret || '').trim()
+  if (secret.length < 12 || secret.length > 100 || /\s/.test(secret)) {
+    return sendJson(res, 422, { error: 'Use 12–100 characters with no spaces.', fields: { secret: 'Use 12–100 characters with no spaces.' } })
+  }
+  recordWebhookStatus({ secretEnc: encryptSecret(secret), updatedAt: new Date().toISOString() })
+  console.log('Razorpay webhook secret saved')
+  sendJson(res, 200, webhookPublicView(req))
+}
+
+function handleAdminDeleteWebhook(req, res) {
+  const saved = readJson(WEBHOOK_FILE) || {}
+  delete saved.secretEnc
+  delete saved.updatedAt
+  writeJson(WEBHOOK_FILE, saved)
+  console.log('Razorpay webhook secret removed')
+  sendJson(res, 200, webhookPublicView(req))
+}
+
+// Razorpay calls this when a payment succeeds — even if the buyer closed the tab
+// before the page could confirm it. Razorpay retries anything that isn't a 2xx, so
+// every "nothing to do" case answers 200, and only a bad signature is refused.
+async function handleRazorpayWebhook(req, res) {
+  let raw
+  try {
+    raw = await readRawBody(req)
+  } catch (e) {
+    return sendJson(res, 400, { error: e.message })
+  }
+
+  const { secret } = webhookConfig()
+  if (!secret) {
+    console.warn('Razorpay webhook received, but no webhook secret is set — ignored. Set it on /admin → Razorpay keys.')
+    return sendJson(res, 503, { error: 'Webhook not set up.' })
+  }
+
+  const signature = String(req.headers['x-razorpay-signature'] || '')
+  const expected = crypto.createHmac('sha256', secret).update(raw).digest('hex')
+  const valid = signature.length === expected.length && crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))
+  if (!valid) {
+    console.warn('Razorpay webhook with a bad signature — ignored. Does the secret on /admin match the one in Razorpay?')
+    recordWebhookStatus({ lastEventAt: new Date().toISOString(), lastEvent: null, lastResult: 'bad-signature' })
+    return sendJson(res, 400, { error: 'Invalid signature.' })
+  }
+
+  let body
+  try {
+    body = JSON.parse(raw.toString('utf8'))
+  } catch {
+    return sendJson(res, 400, { error: 'Invalid JSON.' })
+  }
+
+  const event = String(body.event || '')
+  const status = (lastResult) => recordWebhookStatus({ lastEventAt: new Date().toISOString(), lastEvent: event, lastResult })
+
+  if (event !== 'payment.captured' && event !== 'order.paid') {
+    status('ignored')
+    return sendJson(res, 200, { ok: true, ignored: event })
+  }
+
+  const payment = body.payload?.payment?.entity || {}
+  const orderId = String(payment.order_id || body.payload?.order?.entity?.id || '')
+  const paymentId = String(payment.id || '')
+  if (!paymentId || !orderId) {
+    status('ignored')
+    return sendJson(res, 200, { ok: true, ignored: 'no order' })
+  }
+
+  // Razorpay usually sends both order.paid and payment.captured for one payment: if this
+  // payment is already fully recorded, there is nothing to look up.
+  const known = readRegistrations().find((r) => r.paymentId === paymentId)
+  if (known && known.name && known.phone && known.amountPaise != null) {
+    status('duplicate')
+    return sendJson(res, 200, { ok: true, result: 'duplicate' })
+  }
+
+  // Who paid: order.paid carries the order (and its notes); payment.captured doesn't,
+  // so fall back to the order we remember, then to asking Razorpay for it.
+  let notes = body.payload?.order?.entity?.notes || null
+  const pending = pendingOrders.get(orderId)
+  if (!notes && pending) {
+    notes = { purpose: ORDER_PURPOSE, name: pending.name, phone: pending.phone, email: pending.email, seller_type: SELLER_TYPES[pending.sellerType] }
+  }
+  if (!notes) {
+    try {
+      const { status: s, json } = await razorpay('GET', `/orders/${encodeURIComponent(orderId)}`)
+      if (s === 200) notes = json.notes || {}
+    } catch (e) {
+      console.error('Webhook: could not read the order from Razorpay:', e.message)
+    }
+  }
+  if (!notes) {
+    // Couldn't tell whose order it is right now — let Razorpay retry later.
+    status('retry')
+    return sendJson(res, 503, { error: 'Order details unavailable, retry later.' })
+  }
+  if (notes.purpose !== ORDER_PURPOSE) {
+    status('not-ours')
+    return sendJson(res, 200, { ok: true, ignored: 'not a group meeting order' })
+  }
+
+  const paidAt = payment.created_at ? new Date(payment.created_at * 1000).toISOString() : new Date().toISOString()
+  const result = saveRegistration({
+    paymentId,
+    orderId,
+    name: notes.name || null,
+    phone: notes.phone || null,
+    email: notes.email || payment.email || null,
+    sellerType: notes.seller_type || null,
+    amountPaise: Number.isInteger(payment.amount) ? payment.amount : null,
+    paidAt,
+    source: 'webhook',
+  })
+  if (pending && Number.isInteger(payment.amount) && payment.amount !== pending.amount) {
+    console.error(`⚠ Webhook amount ${payment.amount} differs from the order amount ${pending.amount} for ${orderId}`)
+  }
+  pendingOrders.delete(orderId)
+  status(result)
+  if (result === 'new') console.log(`✔ Paid (webhook): ${notes.name} (${notes.phone}) — ${paymentId}`)
+  sendJson(res, 200, { ok: true, result })
 }
 
 /* ---------------- admin credentials ---------------- */
@@ -843,7 +1060,7 @@ async function handleCreateOrder(req, res) {
       currency: 'INR',
       receipt: `gm_${Date.now()}`,
       notes: {
-        purpose: 'Group meeting registration',
+        purpose: ORDER_PURPOSE,
         name: plain(booking.name),
         phone: booking.phone,
         email: plain(booking.email),
@@ -925,6 +1142,7 @@ async function handleVerify(req, res) {
     sellerType: booking ? SELLER_TYPES[booking.sellerType] : null,
     amountPaise: booking?.amount ?? null,
     paidAt: new Date().toISOString(),
+    source: 'checkout',
   }
   saveRegistration(entry)
   pendingOrders.delete(orderId)
@@ -943,6 +1161,7 @@ http
       if (urlPath === '/api/config' && req.method === 'GET') return await handleConfig(req, res)
       if (urlPath === '/api/create-order' && req.method === 'POST') return await handleCreateOrder(req, res)
       if (urlPath === '/api/verify-payment' && req.method === 'POST') return await handleVerify(req, res)
+      if (urlPath === '/api/webhooks/razorpay' && req.method === 'POST') return await handleRazorpayWebhook(req, res)
 
       if (urlPath === '/api/admin/login' && req.method === 'POST') return await handleAdminLogin(req, res)
       if (urlPath === '/api/admin/logout' && req.method === 'POST') return handleAdminLogout(req, res)
@@ -955,6 +1174,9 @@ http
         if (urlPath === '/api/admin/razorpay' && req.method === 'GET') return handleAdminGetRazorpay(req, res)
         if (urlPath === '/api/admin/razorpay' && req.method === 'PUT') return await handleAdminSaveRazorpay(req, res)
         if (urlPath === '/api/admin/razorpay' && req.method === 'DELETE') return handleAdminDeleteRazorpay(req, res)
+        if (urlPath === '/api/admin/webhook' && req.method === 'GET') return handleAdminGetWebhook(req, res)
+        if (urlPath === '/api/admin/webhook' && req.method === 'PUT') return await handleAdminSaveWebhook(req, res)
+        if (urlPath === '/api/admin/webhook' && req.method === 'DELETE') return handleAdminDeleteWebhook(req, res)
         if (urlPath === '/api/admin/smtp' && req.method === 'GET') return handleAdminGetSmtp(req, res)
         if (urlPath === '/api/admin/smtp' && req.method === 'PUT') return await handleAdminSaveSmtp(req, res)
         if (urlPath === '/api/admin/smtp' && req.method === 'DELETE') return handleAdminDeleteSmtp(req, res)

@@ -295,6 +295,108 @@ $('rzpRemoveBtn').addEventListener('click', async () => {
   }
 })
 
+/* ---------------- Razorpay webhook ---------------- */
+
+const whForm = $('whForm')
+const whSecret = whForm.elements.secret
+
+function renderWebhook(w) {
+  $('whUrl').value = w.url
+  $('whLocalNote').hidden = !w.urlIsLocal
+  whSecret.value = ''
+  whSecret.placeholder = w.hasSecret ? 'Saved ✓ (type a new one to replace)' : 'Same secret you type in Razorpay'
+  $('whRemoveBtn').hidden = w.source !== 'admin'
+
+  const chip = $('whChip')
+  if (!w.hasSecret) {
+    chip.className = 'chip chip--off'
+    chip.textContent = 'Not set up'
+  } else if (w.lastResult === 'bad-signature') {
+    chip.className = 'chip chip--off'
+    chip.textContent = 'Secret mismatch'
+  } else if (w.lastEventAt) {
+    chip.className = 'chip chip--live'
+    chip.textContent = 'Receiving'
+  } else {
+    chip.className = 'chip chip--test'
+    chip.textContent = 'Waiting'
+  }
+
+  const RESULT = {
+    new: 'payment recorded',
+    updated: 'payment details filled in',
+    duplicate: 'already recorded',
+    ignored: 'not a payment event',
+    'not-ours': 'payment from another app, skipped',
+    retry: 'order details unavailable, Razorpay will retry',
+    'bad-signature': "signature didn't match — check the secret is the same in Razorpay and here",
+  }
+  $('whLast').textContent = w.lastEventAt
+    ? `Last webhook: ${dateTime(w.lastEventAt)}${w.lastEvent ? ` · ${w.lastEvent}` : ''} · ${RESULT[w.lastResult] || w.lastResult || ''}`
+    : w.hasSecret
+      ? 'No webhook received yet.'
+      : ''
+}
+
+$('whCopyUrl').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText($('whUrl').value)
+    $('whCopyUrl').textContent = 'Copied ✓'
+  } catch {
+    $('whUrl').select()
+    $('whCopyUrl').textContent = 'Press Ctrl+C'
+  }
+  setTimeout(() => ($('whCopyUrl').textContent = 'Copy'), 1800)
+})
+
+// A strong random secret, shown so it can be copied into Razorpay before saving.
+$('whGenerate').addEventListener('click', () => {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789'
+  const bytes = crypto.getRandomValues(new Uint8Array(32))
+  whSecret.value = [...bytes].map((b) => chars[b % chars.length]).join('')
+  const toggle = eyeToggles.find((t) => t.input === whSecret)
+  if (toggle) setVisible(whSecret, toggle.button, true)
+  whSecret.select()
+  alertMsg($('whAlert'), '')
+  $('whOk').textContent = 'Copy this secret into Razorpay too, then press Save secret.'
+  $('whOk').hidden = false
+})
+
+whSecret.addEventListener('input', () => {
+  whForm.querySelector('[data-for="secret"]').textContent = ''
+  whSecret.closest('.field').classList.remove('has-error')
+})
+
+whForm.addEventListener('submit', async (e) => {
+  e.preventDefault()
+  alertMsg($('whAlert'), '')
+  $('whOk').hidden = true
+  const secret = whSecret.value.trim()
+  const fieldErr = (msg) => {
+    whForm.querySelector('[data-for="secret"]').textContent = msg
+    whSecret.closest('.field').classList.add('has-error')
+  }
+  if (secret.length < 12 || /\s/.test(secret)) return fieldErr('Use at least 12 characters with no spaces (or press Generate).')
+
+  $('whSaveBtn').disabled = true
+  const { ok, status, data } = await api('PUT', '/api/admin/webhook', { secret }).catch(() => ({ data: {} }))
+  $('whSaveBtn').disabled = false
+  if (status === 401) return show('login')
+  if (!ok) return data.fields?.secret ? fieldErr(data.fields.secret) : alertMsg($('whAlert'), data.error || 'Could not save.')
+
+  hideAllPasswords()
+  renderWebhook(data)
+  $('whOk').textContent = 'Webhook secret saved. Make sure Razorpay has the same secret.'
+  $('whOk').hidden = false
+})
+
+$('whRemoveBtn').addEventListener('click', async () => {
+  if (!confirm('Remove the webhook secret? Webhooks from Razorpay will be refused until a secret is set again.')) return
+  const { ok, status, data } = await api('DELETE', '/api/admin/webhook').catch(() => ({ data: {} }))
+  if (status === 401) return show('login')
+  if (ok) renderWebhook(data)
+})
+
 /* ---------------- email (SMTP) settings ---------------- */
 
 const PROVIDERS = {
@@ -649,11 +751,13 @@ async function loadDashboard() {
   renderLogin(data)
   show('dash')
   loadRegistrations()
-  const [rzp, smtp] = await Promise.all([
+  const [rzp, smtp, wh] = await Promise.all([
     api('GET', '/api/admin/razorpay').catch(() => ({})),
     api('GET', '/api/admin/smtp').catch(() => ({})),
+    api('GET', '/api/admin/webhook').catch(() => ({})),
   ])
   if (rzp.ok) renderRazorpay(rzp.data)
+  if (wh.ok) renderWebhook(wh.data)
   if (smtp.ok) renderSmtp(smtp.data)
 }
 
